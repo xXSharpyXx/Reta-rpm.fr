@@ -30,6 +30,7 @@ public class MainActivity extends BridgeActivity {
         FlavorPlugins.register(this);
         registerPlugin(PrintPlugin.class);
         registerPlugin(RestAlertPlugin.class);
+        registerPlugin(LiveSessionPlugin.class);
         registerPlugin(BackupFolderPlugin.class);
         registerPlugin(BarIconsPlugin.class);
         registerPlugin(DeviceAuthPlugin.class);

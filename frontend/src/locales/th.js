@@ -2685,4 +2685,10 @@ export default {
   'Latest workouts': 'การออกกำลังกายล่าสุด',
   'My plans': 'แผนของฉัน',
   'Exercise library': 'คลังท่าออกกำลังกาย',
+  'Let’s go': 'ไปต่อกัน',
+  'Set done': 'เสร็จเซ็ต',
+  '+30 s': '+30 วิ',
+  'Workout on the lock screen': 'การออกกำลังกายบนหน้าจอล็อก',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': 'การแจ้งเตือนแบบเงียบที่แสดงเวลาพักที่เหลือ ท่าออกกำลังกาย และเซ็ตถัดไป โดยไม่ต้องปลดล็อก เมื่อพักครบจะสั่นหนึ่งครั้ง',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'การแจ้งเตือนปิดอยู่ จึงแสดงการออกกำลังกายบนหน้าจอล็อกไม่ได้ เปิดได้ในการตั้งค่า Android',
 }

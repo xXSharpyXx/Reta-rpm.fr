@@ -2674,4 +2674,10 @@ export default {
   'Latest workouts': '最近的训练',
   'My plans': '我的计划',
   'Exercise library': '动作库',
+  'Let’s go': '继续练',
+  'Set done': '完成这组',
+  '+30 s': '+30 秒',
+  'Workout on the lock screen': '锁屏显示训练',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': '一条静音通知，显示休息倒计时、当前动作和下一组，不用解锁就能看到。休息结束时震动一次。',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': '通知已关闭，训练无法显示在锁屏上。可以在 Android 设置中允许通知。',
 }

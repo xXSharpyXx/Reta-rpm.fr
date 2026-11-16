@@ -2729,4 +2729,10 @@ export default {
   'Latest workouts': 'آخر التمارين',
   'My plans': 'خططي',
   'Exercise library': 'مكتبة التمارين',
+  'Let’s go': 'هيا بنا',
+  'Set done': 'تمت الجولة',
+  '+30 s': '+30 ث',
+  'Workout on the lock screen': 'التمرين على شاشة القفل',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': 'إشعار صامت يعرض العد التنازلي للراحة والتمرين والجولة التالية دون فتح القفل. في نهاية الراحة يهتز مرة واحدة.',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'الإشعارات متوقفة، لذا لا يمكن عرض تمرينك على شاشة القفل. يمكنك السماح بها من إعدادات Android.',
 }

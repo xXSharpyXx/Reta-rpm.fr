@@ -19,7 +19,12 @@
 // exercise without ticking anything (Discord: Done read like "finish", and there was no way to
 // leave a machine somebody else took). The native side moves the activity on by itself for both.
 //
-// Text only: no exercise animations or pictures (Gym visual licence). iPhone app only.
+// Text only: no exercise animations or pictures (Gym visual licence).
+//
+// The Android app takes the same calls (LiveSessionPlugin.java, LiveSessionService.java): a silent
+// "Workout in progress" notification on the lock screen, a Live Update on Android 16, with +30 s,
+// Skip rest and Set done. There it also runs the rest's countdown and its end (one short buzz), so
+// useUI books no separate rest alert while it is on (lockScreenOwnsRest). Settings can switch it off.
 import { MOBILE, nativePlatform } from './mobile.js'
 import { EXIDX } from './exercises.js'
 import { t } from './i18n.js'
@@ -29,6 +34,11 @@ import { isWarmupRow } from './workout-model.js'
 import { nextUnfinishedUnit, restSecFor } from './supersetFlow.js'
 import { speedUnitOf } from './speed.js'
 import { accentPair, accentValue } from './accent.js'
+import { gymNameOf } from './gyms.js'
+import { fmtNum } from './format.js'
+import { isBw, fmtSec } from './history.js'
+import { entryKind, perBellOf } from './workout-summary.js'
+import { askNotifPermissionOnce } from './rest-alert.js'
 
 export const LIVE_VERSION = 2
 const APPLIED_KEY = 'gym_live_applied'
@@ -71,6 +81,24 @@ export function upcomingSets (S) {
   return out
 }
 
+/**
+ * The set to do, as the Android lock screen spells it: "60 kg × 8", "+10 kg × 12" or "12 reps"
+ * for a bodyweight set, "20 kg per dumbbell × 10", a hold's duration. Empty when the set has
+ * nothing to say (the setLabel line stands in then).
+ */
+export function loadLine (S, e, s) {
+  const unit = S?.unit || 'kg'
+  const kind = entryKind({ ...e, sets: [{ ...s, done: true }] })
+  const w = Number(s?.w) || 0
+  if (kind === 'cardio') return ''
+  if (kind === 'time') return fmtSec(Number(s?.sec) || 0) + (w > 0 ? ' · ' + fmtNum(w) + ' ' + unit : '')
+  const r = Number(s?.r) || 0
+  const cfg = { ...(e.target || {}), id: e.target?.id ?? e.id }
+  if (isBw(cfg)) return w > 0 ? `+${fmtNum(w)} ${unit} × ${r}` : t('{0} reps', r)
+  const bell = perBellOf(e) === 'each' ? ' ' + t('per dumbbell') : ''
+  return `${fmtNum(w)} ${unit}${bell} × ${r}`
+}
+
 function setView (S, A, { entryIdx, setIdx, restAfter, unit }) {
   const e = A.entries[entryIdx]
   const s = e.sets[setIdx]
@@ -80,6 +108,8 @@ function setView (S, A, { entryIdx, setIdx, restAfter, unit }) {
   const n = warmup ? (e.sets || []).filter(isWarmupRow).indexOf(s) + 1 : work.indexOf(s) + 1
   let label = ''
   try { label = setLabel(e.id, s, target, speedUnitOf(S)) } catch { label = '' }
+  let load = label
+  try { load = loadLine(S, e, s) || label } catch { load = label }
   return {
     exId: String(e.id),
     entryIdx,
@@ -89,6 +119,10 @@ function setView (S, A, { entryIdx, setIdx, restAfter, unit }) {
     exName: EXIDX[e.id] ? exerciseNameText(EXIDX[e.id]) : String(target.name || e.name || e.id),
     setLine: warmup ? t('Warm-up') + ' ' + n : t('Set {0} of {1}', n, work.length),
     target: label,
+    // For the Android lock screen: the weight with its unit and the reps ("60 kg × 8"), and the
+    // machine when one is set. The iPhone activity reads `target` and ignores these.
+    load,
+    machine: gymNameOf(S, e.gym) || '',
     restAfter: Math.max(0, Math.round(restAfter || 0)),
     // The superset unit's first entry: Next exercise moves on to the next set with another one.
     unit: Number.isInteger(unit) ? unit : entryIdx,
@@ -144,6 +178,11 @@ export function buildLiveActivity (S, timer = null) {
         skipRest: t('Skip rest'),
         // Sets are left, but the activity ran past the ones it carries (many taps, page asleep).
         openApp: t('Open openGym for the next set'),
+        // The Android lock screen's own words (LiveSessionService.java).
+        title: t('Workout in progress'),
+        letsGo: t('Let’s go'),
+        setDone: t('Set done'),
+        plus30: t('+30 s'),
       },
     },
     state: {
@@ -220,6 +259,11 @@ export function applyLiveEvents (events, getState) {
     } else if (ev.type === 'restSkip' && ours) {
       if (!handlers) break
       if (restSkipApplies(handlers.timer?.(), num(ev.at))) handlers.restSkip?.()
+    } else if (ev.type === 'restAdd' && ours) {
+      // +30 s on the Android lock screen: only for the rest it was tapped in, still running.
+      if (!handlers) break
+      const tm = handlers.timer?.()
+      if (tm && !tm.ready && restSkipApplies(tm, num(ev.at)) && num(ev.sec) > 0) handlers.restAdd?.(num(ev.sec))
     }
     // Applied, or meaningless now (another workout, a set that is gone or already ticked).
     applied.push(ev.id)
@@ -232,12 +276,28 @@ export function applyLiveEvents (events, getState) {
 /* ---------- the native plugin ---------- */
 
 let pluginP = null
+// The iPhone's Live Activity, or on Android the "Workout in progress" notification on the lock
+// screen (LiveSessionPlugin.java), which takes the same calls and sends the same events.
+let platform = null
+// Set once the Android side answered that it can show the card (an older APK has no such plugin).
+let androidReady = false
 // Inside an object: a Capacitor plugin proxy answers `then` (lib/rest-alert.js, the Coach hang #42).
 const livePlugin = () => pluginP || (pluginP = (async () => {
-  if (!MOBILE || (await nativePlatform()) !== 'ios') return null
+  const p = MOBILE ? await nativePlatform() : null
+  if (p !== 'ios' && p !== 'android') return null
+  platform = p
   const { registerPlugin } = await import('@capacitor/core')
   return { LiveActivity: registerPlugin('LiveActivity') }
 })().catch(() => null))
+
+/** Settings → "Workout on the lock screen" (Android, on unless switched off). */
+export const lockScreenOn = S => S?.lockScreenWorkout !== false
+
+/**
+ * Whether the Android lock-screen notification runs this rest: it counts it down and marks its
+ * end with one short buzz, so the separate rest countdown and rest-over alert stay off.
+ */
+export const lockScreenOwnsRest = S => androidReady && lockScreenOn(S) && !!S?.active && !S.active.editingWorkoutId
 
 let getStateRef = null
 let draining = null
@@ -283,15 +343,40 @@ export async function startLiveActivitySync ({ useStore, useUI }) {
   getStateRef = () => useStore.getState()
   let supported = false
   try { supported = !!(await p.LiveActivity.status())?.supported } catch { supported = false }
+  androidReady = supported && platform === 'android'
   let last = null, tm = null
+  // Android: the lock-screen card needs the notification permission (Android 13+). It is asked
+  // once, like the rest countdown's; refused, a toast says what that costs, once per workout.
+  let warnedFor = null
+  const checkNotifications = async wid => {
+    if (warnedFor === wid) return
+    warnedFor = wid
+    try {
+      if ((await p.LiveActivity.status())?.notifications !== false) return
+      // Not held up for good by a dialog left open: the answer counts if it comes in time.
+      await Promise.race([askNotifPermissionOnce(), new Promise(r => setTimeout(r, 20000))])
+      if ((await p.LiveActivity.status())?.notifications !== false) return
+      useUI.getState().toast(t('Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.'), { ms: 6000 })
+    } catch { /* nothing to say */ }
+  }
+  // Android: a tap on the card opens the app on the workout, wherever it was left.
+  const openWorkout = async () => {
+    if (platform !== 'android') return
+    try {
+      const { open } = (await p.LiveActivity.consumeOpen()) || {}
+      if (open && useStore.getState().S?.active) window.location.hash = '#/workout'
+    } catch { /* an older native side: the app opens where it was */ }
+  }
   const send = async () => {
     tm = null
     // An empty, not yet restored copy would end the activity of a workout that is still running.
     if (!storeReady()) return
     try {
-      const live = buildLiveActivity(useStore.getState().S, useUI.getState().timer)
+      const S = useStore.getState().S
+      const live = platform === 'android' && !lockScreenOn(S) ? null : buildLiveActivity(S, useUI.getState().timer)
       const json = live ? JSON.stringify(live) : ''
       if (json === last) return
+      if (live && platform === 'android') checkNotifications(live.attributes.wid)
       if (live) await p.LiveActivity.update({ wid: live.attributes.wid, attributes: JSON.stringify(live.attributes), state: JSON.stringify(live.state) })
       else await p.LiveActivity.end()
       last = json
@@ -311,14 +396,16 @@ export async function startLiveActivitySync ({ useStore, useUI }) {
     if (!same && restOf(a) !== restOf(b)) schedule()
   })
   const sub = await p.LiveActivity.addListener('liveActivityEvent', () => { drainLiveEvents() }).catch(() => null)
-  const onVisible = () => { if (document.visibilityState === 'visible') { drainLiveEvents(); schedule() } }
+  const subOpen = platform === 'android' ? await p.LiveActivity.addListener('liveActivityOpen', () => { openWorkout() }).catch(() => null) : null
+  const onVisible = () => { if (document.visibilityState === 'visible') { drainLiveEvents(); schedule(); openWorkout() } }
   document.addEventListener('visibilitychange', onVisible)
   // At launch: a workout that ended while the app was gone takes its activity with it.
   if (supported) send()
   drainLiveEvents()
-  return () => { offStore(); offUI(); sub?.remove?.(); document.removeEventListener('visibilitychange', onVisible); clearTimeout(tm) }
+  openWorkout()
+  return () => { offStore(); offUI(); sub?.remove?.(); subOpen?.remove?.(); document.removeEventListener('visibilitychange', onVisible); clearTimeout(tm) }
 }
 
 // Test seams.
-export function _setLivePluginForTest (plugin, getState) { pluginP = Promise.resolve(plugin ? { LiveActivity: plugin } : null); getStateRef = getState || null }
-export function _resetLiveActivity () { handlers = null; pluginP = null; getStateRef = null; draining = null }
+export function _setLivePluginForTest (plugin, getState, plat = null) { pluginP = Promise.resolve(plugin ? { LiveActivity: plugin } : null); getStateRef = getState || null; platform = plat }
+export function _resetLiveActivity () { handlers = null; pluginP = null; getStateRef = null; draining = null; platform = null; androidReady = false }

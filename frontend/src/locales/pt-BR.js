@@ -1645,6 +1645,8 @@ export const PT_BR_OVERRIDES = {
   'Plan this day': 'Planejar este dia',
   'Workout in progress': 'Treino em andamento',
   'My plans': 'Meus planos',
+  'Workout on the lock screen': 'Treino na tela de bloqueio',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'As notificações estão desligadas, então o treino não pode aparecer na tela de bloqueio. Você pode permitir nas configurações do Android.',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }

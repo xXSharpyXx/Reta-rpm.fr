@@ -1980,6 +1980,8 @@ function ActiveWorkout() {
     // Next exercise and Skip rest: what this screen's own Next and the rest bar's Skip do.
     next: idx => update(s => { if (s.active && !s.active.editingWorkoutId && s.active.entries?.[idx]) s.active.cur = idx }),
     restSkip: () => useUI.getState().stopRest(),
+    // +30 s from the Android lock screen (lib/live-activity.js): what the rest bar's + does.
+    restAdd: sec => useUI.getState().addRest(sec),
     timer: () => useUI.getState().timer,
   }), [])
 

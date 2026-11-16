@@ -2674,4 +2674,10 @@ export default {
   'Latest workouts': 'Mes dernières séances',
   'My plans': 'Mes plans',
   'Exercise library': 'Bibliothèque d’exercices',
+  'Let’s go': 'C’est reparti',
+  'Set done': 'Série faite',
+  '+30 s': '+30 s',
+  'Workout on the lock screen': 'Séance sur l’écran de verrouillage',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': 'Une notification silencieuse avec le compte à rebours du repos, l’exercice et la prochaine série, visible sans déverrouiller. À la fin du repos, une seule vibration.',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'Les notifications sont désactivées : ta séance ne peut pas s’afficher sur l’écran de verrouillage. Tu peux les autoriser dans les réglages Android.',
 }

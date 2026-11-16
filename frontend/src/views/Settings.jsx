@@ -668,6 +668,14 @@ export default function Settings({ page = null, find = null, via = null, entryKe
             <Switch checked={!!S.timerFlash} onChange={v => update(s => { s.timerFlash = v })} />
           </Row>
         </Section>
+        {/* Android app: the running workout on the lock screen (lib/live-activity.js, LiveSessionService):
+            the rest counting down, the exercise and the next set, with +30 s, Skip rest and Set done.
+            On by default; off brings back the separate rest countdown and rest-over alert. */}
+        {MOBILE && android && <Section footer={t('A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.')}>
+          <Row icon="stopwatch" iconTint="var(--acc)" title={t('Workout on the lock screen')}>
+            <Switch checked={S.lockScreenWorkout !== false} onChange={v => update(s => { s.lockScreenWorkout = v })} />
+          </Row>
+        </Section>}
       </>
     },
 

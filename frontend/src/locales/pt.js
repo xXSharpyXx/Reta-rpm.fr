@@ -2674,4 +2674,10 @@ export default {
   'Latest workouts': 'Últimos treinos',
   'My plans': 'Os meus planos',
   'Exercise library': 'Biblioteca de exercícios',
+  'Let’s go': 'Vamos lá',
+  'Set done': 'Série feita',
+  '+30 s': '+30 s',
+  'Workout on the lock screen': 'Treino no ecrã de bloqueio',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': 'Uma notificação silenciosa com a contagem do descanso, o exercício e a próxima série, visível sem desbloquear. No fim do descanso vibra uma vez.',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'As notificações estão desligadas, por isso o treino não pode aparecer no ecrã de bloqueio. Podes permiti-las nas definições do Android.',
 }

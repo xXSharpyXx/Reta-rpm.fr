@@ -2721,4 +2721,10 @@ export default {
   'Latest workouts': 'Senaste passen',
   'My plans': 'Mina planer',
   'Exercise library': 'Övningsbibliotek',
+  'Let’s go': 'Kör igen',
+  'Set done': 'Set klart',
+  '+30 s': '+30 s',
+  'Workout on the lock screen': 'Passet på låsskärmen',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': 'En tyst avisering med vilans nedräkning, övningen och nästa set, synlig utan att låsa upp. När vilan är slut vibrerar den en gång.',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'Aviseringar är avstängda, så passet kan inte visas på låsskärmen. Du kan tillåta dem i Androids inställningar.',
 }

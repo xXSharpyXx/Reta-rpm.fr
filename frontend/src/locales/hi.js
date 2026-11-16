@@ -2674,4 +2674,10 @@ export default {
   'Latest workouts': 'हाल के वर्कआउट',
   'My plans': 'मेरी योजनाएं',
   'Exercise library': 'एक्सरसाइज़ लाइब्रेरी',
+  'Let’s go': 'चलो फिर शुरू',
+  'Set done': 'सेट पूरा',
+  '+30 s': '+30 से',
+  'Workout on the lock screen': 'लॉक स्क्रीन पर वर्कआउट',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': 'एक साइलेंट नोटिफ़िकेशन: आराम की उलटी गिनती, एक्सरसाइज़ और अगला सेट, अनलॉक किए बिना दिखता है। आराम खत्म होने पर एक बार वाइब्रेट करता है।',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'नोटिफ़िकेशन बंद हैं, इसलिए आपका वर्कआउट लॉक स्क्रीन पर नहीं दिख सकता। आप Android सेटिंग्स में इन्हें चालू कर सकते हैं।',
 }

@@ -2678,4 +2678,10 @@ export default {
   'Latest workouts': 'Последние тренировки',
   'My plans': 'Мои планы',
   'Exercise library': 'Библиотека упражнений',
+  'Let’s go': 'Поехали',
+  'Set done': 'Подход сделан',
+  '+30 s': '+30 с',
+  'Workout on the lock screen': 'Тренировка на экране блокировки',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': 'Тихое уведомление с отсчётом отдыха, упражнением и следующим подходом, видно без разблокировки. В конце отдыха один короткий виброотклик.',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'Уведомления выключены, поэтому тренировка не может отображаться на экране блокировки. Их можно разрешить в настройках Android.',
 }

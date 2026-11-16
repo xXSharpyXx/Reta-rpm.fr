@@ -78,6 +78,18 @@
                 android:value="Shows how long is left in the rest between sets." />
         </service>
 
+        <!-- "Workout in progress" on the lock screen while a workout runs (LiveSessionService):
+             the rest counting down, the exercise and the next set, with +30 s, Skip rest and Set
+             done. specialUse, like the rest countdown above: a workout timer, not media. -->
+        <service
+            android:name=".LiveSessionService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Shows the running workout on the lock screen: the rest countdown and the next set." />
+        </service>
+
         <!-- The background check before a nudge or a reminder (NudgeCheckJob): asks the paired
              server whether the day was trained elsewhere. Run by JobScheduler only; persisted
              jobs survive a reboot through RECEIVE_BOOT_COMPLETED (declared below). -->
@@ -136,6 +148,9 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Android 16: the workout on the lock screen may show as a Live Update (a promoted ongoing
+         notification, LiveSessionService). A normal permission, no prompt. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <!-- Delete my account on a paired phone: the phone's own face, fingerprint or screen lock
          confirms it is the owner first (DeviceAuthPlugin). A normal permission, no prompt. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />

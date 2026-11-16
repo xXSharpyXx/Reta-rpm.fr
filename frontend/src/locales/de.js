@@ -2694,4 +2694,10 @@ export default {
   'Latest workouts': 'Letzte Trainings',
   'My plans': 'Meine Pläne',
   'Exercise library': 'Übungsbibliothek',
+  'Let’s go': 'Weiter geht’s',
+  'Set done': 'Satz fertig',
+  '+30 s': '+30 s',
+  'Workout on the lock screen': 'Training auf dem Sperrbildschirm',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': 'Eine stille Benachrichtigung mit dem Pausen-Countdown, der Übung und dem nächsten Satz, sichtbar ohne Entsperren. Am Ende einer Pause vibriert sie einmal.',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'Benachrichtigungen sind aus, darum kann dein Training nicht auf dem Sperrbildschirm erscheinen. Du kannst sie in den Android-Einstellungen erlauben.',
 }

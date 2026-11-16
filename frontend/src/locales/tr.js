@@ -2674,4 +2674,10 @@ export default {
   'Latest workouts': 'Son antrenmanlar',
   'My plans': 'Planlarım',
   'Exercise library': 'Egzersiz kütüphanesi',
+  'Let’s go': 'Devam',
+  'Set done': 'Set tamam',
+  '+30 s': '+30 sn',
+  'Workout on the lock screen': 'Kilit ekranında antrenman',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': 'Dinlenme geri sayımı, egzersiz ve sonraki setle sessiz bir bildirim, kilidi açmadan görünür. Dinlenme bitince bir kez titrer.',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'Bildirimler kapalı, bu yüzden antrenmanın kilit ekranında görünemez. Android ayarlarından izin verebilirsin.',
 }

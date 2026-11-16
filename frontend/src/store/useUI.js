@@ -10,6 +10,7 @@ import { armRestAlert, bindNativeRest, disarmRestAlert, holdRestAlert, toneNativ
 import { useStore } from './useStore.js'
 import { REST_MAX } from '../lib/duration.js'
 import { accentValue } from '../lib/accent.js'
+import { lockScreenOwnsRest } from '../lib/live-activity.js'
 
 // Fire-and-forget: lets the server push a "rest over" alert if this tab gets suspended
 // before the local timer completes. No-ops for guests / offline. The device id keeps the
@@ -27,6 +28,9 @@ const bookRestEnd = (endsAt, totalSec, kind) => {
   const switching = kind === 'switch'
   if (!MOBILE) { if (!switching) pushRestTimer(Math.max(1, Math.round((endsAt - Date.now()) / 1000))); return }
   const { S } = useStore.getState()
+  // The Android lock-screen card (lib/live-activity.js) counts this rest down and buzzes once at
+  // its end, so neither the separate countdown notification nor the rest-over alarm is booked.
+  if (!switching && lockScreenOwnsRest(S)) { disarmRestAlert(); return }
   armRestAlert(endsAt, { title: switching ? t('Switch sides') : t('Rest’s over. Next set!'), countdownTitle: switching ? t('Switch sides') : t('Rest'), totalSec, accent: accentValue(S), sound: !!S.sound, classic: restSoundOf(S) === 'classic', tone: restSoundOf(S), vibrate: S.vibrate !== false, alarmBuzz: S.vibrate !== false && !!S.vibrateOnSilent })
     .then(ok => {
       // Only for the rest that asked: one skipped or moved since then has booked its own end.

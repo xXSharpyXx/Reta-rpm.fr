@@ -277,18 +277,101 @@ describe('startLiveActivitySync', () => {
     stop()
   })
 
-  it('sends nothing where iOS has no Live Activities, and nothing off the iPhone app', async () => {
+  it('sends nothing where iOS has no Live Activities, and nothing off the phone apps', async () => {
     L._setLivePluginForTest(plugin(false))
     const stop = await L.startLiveActivitySync({ useStore, useUI })
     await vi.runAllTimersAsync()
     expect(calls).toEqual([])
     stop()
     L._resetLiveActivity()
-    h.platform = 'android'
+    h.platform = null
     const stop2 = await L.startLiveActivitySync({ useStore, useUI })
     await vi.runAllTimersAsync()
     expect(calls).toEqual([])
     stop2()
     h.platform = 'ios'
+  })
+})
+
+// Android (LiveSessionPlugin.java): the same calls drive the "Workout in progress" notification on
+// the lock screen, with the weight and reps spelled out, +30 s, and a switch to turn it off.
+describe('the Android lock screen', () => {
+  let state, timer, storeSubs, calls, status
+  const useStore = { getState: () => ({ S: state }), subscribe: fn => { storeSubs.push(fn); return () => {} } }
+  const toasts = []
+  const useUI = { getState: () => ({ timer, toast: m => toasts.push(m) }), subscribe: () => () => {} }
+  const plugin = () => ({
+    status: async () => status,
+    update: async arg => { calls.push(['update', JSON.parse(arg.state), JSON.parse(arg.attributes)]) },
+    end: async () => { calls.push(['end']) },
+    drain: async () => ({ events: [] }),
+    ack: async () => {},
+    consumeOpen: async () => ({ open: false }),
+    addListener: async () => ({ remove () {} }),
+  })
+  const active = () => ({ id: 'w1', name: 'Push', cur: 0, entries: [entry('0025', [set({ w: 60, r: 8 }), set({ w: 62.5, r: 6 })])] })
+  beforeEach(() => {
+    vi.useFakeTimers(); localStorage.clear(); localStorage.setItem('gym_rest_notif_asked', '1'); L._resetLiveActivity()
+    state = S(active()); timer = null; storeSubs = []; calls = []; toasts.length = 0; status = { supported: true, notifications: true }
+  })
+  afterEach(() => { vi.useRealTimers(); L._resetLiveActivity() })
+
+  it('spells out the weight with its unit and the reps, and carries the lock screen words', async () => {
+    L._setLivePluginForTest(plugin(), () => ({ S: state }), 'android')
+    const stop = await L.startLiveActivitySync({ useStore, useUI })
+    await vi.runAllTimersAsync()
+    const [, st, attrs] = calls[0]
+    expect(st.cur).toMatchObject({ setLine: 'Set 1 of 2', load: '60 kg × 8', machine: '' })
+    expect(st.ahead[0].load).toBe('62.5 kg × 6')
+    for (const k of ['title', 'letsGo', 'setDone', 'plus30', 'skipRest', 'rest']) expect(typeof attrs.labels[k], k).toBe('string')
+    stop()
+  })
+
+  it('owns the rest while a workout runs, and lets go when switched off', async () => {
+    L._setLivePluginForTest(plugin(), () => ({ S: state }), 'android')
+    const stop = await L.startLiveActivitySync({ useStore, useUI })
+    await vi.runAllTimersAsync()
+    expect(L.lockScreenOwnsRest(state)).toBe(true)
+    const prev = state; state = { ...state, lockScreenWorkout: false }
+    storeSubs.forEach(fn => fn({ S: state }, { S: prev }))
+    await vi.runAllTimersAsync()
+    expect(calls.at(-1)).toEqual(['end'])
+    expect(L.lockScreenOwnsRest(state)).toBe(false)
+    expect(L.lockScreenOwnsRest({ ...prev, active: null })).toBe(false)
+    stop()
+  })
+
+  it('says once when notifications are refused', async () => {
+    status = { supported: true, notifications: false }
+    L._setLivePluginForTest(plugin(), () => ({ S: state }), 'android')
+    const stop = await L.startLiveActivitySync({ useStore, useUI })
+    await vi.runAllTimersAsync()
+    const prev = state; state = { ...state, active: { ...state.active, name: 'Push 2' } }
+    storeSubs.forEach(fn => fn({ S: state }, { S: prev }))
+    await vi.runAllTimersAsync()
+    expect(toasts).toHaveLength(1)
+    stop()
+  })
+
+  it('never owns the rest on the iPhone', async () => {
+    L._setLivePluginForTest(plugin(), () => ({ S: state }), 'ios')
+    const stop = await L.startLiveActivitySync({ useStore, useUI })
+    expect(L.lockScreenOwnsRest(state)).toBe(false)
+    stop()
+  })
+})
+
+describe('+30 s from the lock screen', () => {
+  beforeEach(() => { localStorage.clear(); L._resetLiveActivity() })
+  it('adds to the rest it was tapped in, and not to one over already', () => {
+    const A = { id: 'w1', cur: 0, entries: [entry('0025', [set({ done: true }), set()])] }
+    let timer = { endsAt: 200000, total: 90, left: 60 }
+    const restAdd = vi.fn()
+    L.bindLiveActions({ setDone () {}, timer: () => timer, restAdd })
+    L.applyLiveEvents([{ id: 'e1', type: 'restAdd', sec: 30, wid: 'w1', at: 120000 }], () => ({ S: { active: A } }))
+    expect(restAdd).toHaveBeenCalledWith(30)
+    timer = { ...timer, ready: true }
+    L.applyLiveEvents([{ id: 'e2', type: 'restAdd', sec: 30, wid: 'w1', at: 210000 }], () => ({ S: { active: A } }))
+    expect(restAdd).toHaveBeenCalledTimes(1)
   })
 })

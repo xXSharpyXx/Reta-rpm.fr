@@ -2753,4 +2753,10 @@ export default {
   'Latest workouts': 'সাম্প্রতিক ওয়ার্কআউট',
   'My plans': 'আমার পরিকল্পনা',
   'Exercise library': 'ব্যায়ামের লাইব্রেরি',
+  'Let’s go': 'চলুন শুরু করি',
+  'Set done': 'সেট শেষ',
+  '+30 s': '+৩০ সে',
+  'Workout on the lock screen': 'লক স্ক্রিনে ওয়ার্কআউট',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': 'একটি নীরব নোটিফিকেশন: বিশ্রামের কাউন্টডাউন, ব্যায়াম আর পরের সেট, আনলক না করেই দেখা যায়। বিশ্রাম শেষে একবার কাঁপে।',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'নোটিফিকেশন বন্ধ, তাই লক স্ক্রিনে আপনার ওয়ার্কআউট দেখানো যাবে না। Android সেটিংসে অনুমতি দিতে পারেন।',
 }

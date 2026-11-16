@@ -2677,4 +2677,10 @@ export default {
   'Latest workouts': 'Legutóbbi edzések',
   'My plans': 'Terveim',
   'Exercise library': 'Gyakorlattár',
+  'Let’s go': 'Mehet',
+  'Set done': 'Sorozat kész',
+  '+30 s': '+30 mp',
+  'Workout on the lock screen': 'Edzés a zárolási képernyőn',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': 'Néma értesítés a pihenő visszaszámlálásával, a gyakorlattal és a következő sorozattal, feloldás nélkül is látható. A pihenő végén egyszer rezeg.',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'Az értesítések ki vannak kapcsolva, így az edzés nem jelenhet meg a zárolási képernyőn. Az Android beállításaiban engedélyezheted őket.',
 }

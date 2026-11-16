@@ -2674,4 +2674,10 @@ export default {
   'Latest workouts': '최근 운동',
   'My plans': '내 계획',
   'Exercise library': '운동 라이브러리',
+  'Let’s go': '다시 시작',
+  'Set done': '세트 완료',
+  '+30 s': '+30초',
+  'Workout on the lock screen': '잠금 화면에 운동 표시',
+  'A silent notification with the rest countdown, the exercise and the next set, visible without unlocking. At the end of a rest it buzzes once.': '휴식 카운트다운, 운동, 다음 세트를 잠금 해제 없이 보여주는 무음 알림이에요. 휴식이 끝나면 한 번 진동해요.',
+  'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': '알림이 꺼져 있어 잠금 화면에 운동을 표시할 수 없어요. Android 설정에서 허용할 수 있어요.',
 }
