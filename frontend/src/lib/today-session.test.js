@@ -3,9 +3,12 @@
 // next one) and moved with it.
 import { describe, expect, it } from 'vitest'
 import { todaySession } from './today-session.js'
-import { isoOf } from './format.js'
+import { isoOf, todayISO } from './format.js'
 
-const TODAY = '2026-11-16'   // a Monday
+// The queue reads the real clock, so today is the real today and the weekday is its own.
+const TODAY = todayISO()
+const DOW = new Date(TODAY + 'T12:00:00').getDay()
+const NEXT = (DOW + 1) % 7
 const routines = [
   { id: 'd1', name: 'US W1 D1', ex: [{ id: '0025' }] },
   { id: 'd2', name: 'US W1 D2', ex: [{ id: '0025' }] },
@@ -20,7 +23,7 @@ const S = over => ({ routines, week: {}, dayPlan: {}, workouts: [], queue: null,
 
 describe('todaySession', () => {
   it('names the weekday plan, several routines joined', () => {
-    const s = todaySession(S({ week: { 1: ['d1', 'own'] } }), TODAY)
+    const s = todaySession(S({ week: { [DOW]: ['d1', 'own'] } }), TODAY)
     expect(s.name).toBe('US W1 D1 + Core')
     expect(s.ids).toEqual(['d1', 'own'])
     expect(s.done).toBe(null)
@@ -28,7 +31,7 @@ describe('todaySession', () => {
   })
 
   it('a coach week puts its next session in front, and own routines ride along', () => {
-    expect(todaySession(S({ queue: queue(), week: { 1: ['own'] } }), TODAY).name).toBe('US W1 D1 + Core')
+    expect(todaySession(S({ queue: queue(), week: { [DOW]: ['own'] } }), TODAY).name).toBe('US W1 D1 + Core')
   })
 
   it('a queue session done today: the next one is offered', () => {
@@ -38,18 +41,18 @@ describe('todaySession', () => {
   })
 
   it('a freestyle session on a planned day leaves the plan offered', () => {
-    const s = todaySession(S({ week: { 1: ['own'] }, workouts: [at(null, noon - 3600000, 'Freestyle')] }), TODAY)
+    const s = todaySession(S({ week: { [DOW]: ['own'] }, workouts: [at(null, noon - 3600000, 'Freestyle')] }), TODAY)
     expect(s.name).toBe('Core')
     expect(s.done).toBe(null)
   })
 
   it('the planned routine done today reads as done', () => {
     const w = at('own', noon - 3600000)
-    expect(todaySession(S({ week: { 1: ['own'] }, workouts: [w] }), TODAY).done).toBe(w)
+    expect(todaySession(S({ week: { [DOW]: ['own'] }, workouts: [w] }), TODAY).done).toBe(w)
   })
 
   it('a rest override wins, says the day was changed, and names the next session', () => {
-    const s = todaySession(S({ week: { 1: ['own'], 2: ['d1'] }, dayPlan: { [TODAY]: 'rest' } }), TODAY)
+    const s = todaySession(S({ week: { [DOW]: ['own'], [NEXT]: ['d1'] }, dayPlan: { [TODAY]: 'rest' } }), TODAY)
     expect(s.routines).toEqual([])
     expect(s.rescheduled).toBe(true)
     expect(s.next.routine.name).toBe('US W1 D1')
