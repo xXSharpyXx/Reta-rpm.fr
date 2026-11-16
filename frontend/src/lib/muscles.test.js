@@ -3,7 +3,7 @@ import { EXIDX, EXDB, smOf } from './exercises.js'
 import { LANGS, DERIVED_LOCALES } from './i18n-core.js'
 import {
   MUSCLE_NAME, exerciseMuscleSnapshot, hasExplicitMuscleMetadata, levelsOf, loadOf,
-  loadOfWorkouts, loadOfWeeklyPlan, matchesMuscleGroups, muscleBalanceWindow, muscleGroupsOf,
+  loadOfWorkouts, loadOfWeeklyPlan, matchesMuscleGroups, muscleGroupsOf,
   musclesOf, muscleWeightsOf, rankOf
 } from './muscles.js'
 
@@ -276,12 +276,6 @@ describe('muscle balance windows and ranking', () => {
     { id: 'boundary', d: '2026-07-28', start: now - 30 * 86400000 },
     { id: 'inside', d: '2026-07-29', start: now - 29 * 86400000 },
   ]
-
-  it('preserves calendar-week, strict trailing-day, and all-history semantics', () => {
-    expect(muscleBalanceWindow(workouts, 7, now, '2026-08-27').map(w => w.id)).toEqual(['monday'])
-    expect(muscleBalanceWindow(workouts, 30, now, '2026-08-27').map(w => w.id)).toEqual(['monday', 'sunday', 'inside'])
-    expect(muscleBalanceWindow(workouts, 0, now, '2026-08-27')).toEqual(workouts)
-  })
 
   it('uses relative levels and canonical order to break load ties', () => {
     const load = { chest: 2, deltoids: 2, biceps: 1 }

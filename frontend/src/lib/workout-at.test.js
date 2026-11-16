@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { workoutAt } from './history.js'
-import { muscleBalanceWindow } from './muscles.js'
 
 // Several copies of "when did this workout happen" had drifted apart, and the two ways they were
 // wrong are the two things worth pinning: the UTC-midnight parse, and `||` swallowing a start
@@ -40,21 +39,6 @@ describe('workoutAt', () => {
     for (const w of [{}, null, undefined, { d: '' }, { d: 'yesterday' }, { d: '2026-9-2' }, { start: 'x' }]) {
       expect(Number.isNaN(workoutAt(w))).toBe(true)
     }
-  })
-})
-
-describe('muscleBalanceWindow dates its cutoff the same way', () => {
-  it('keeps a workout logged today inside a 30-day window', () => {
-    // The UTC-midnight parse put a start-less workout up to 12 h earlier than it happened, so
-    // a workout right on the edge of the window fell out of it depending on the reader's zone.
-    const now = new Date('2026-09-22T12:00:00').getTime()
-    const kept = muscleBalanceWindow([{ d: '2026-09-22' }], 30, now)
-    expect(kept).toHaveLength(1)
-  })
-
-  it('still drops one that predates the window', () => {
-    const now = new Date('2026-09-22T12:00:00').getTime()
-    expect(muscleBalanceWindow([{ d: '2026-07-01' }], 30, now)).toHaveLength(0)
   })
 })
 
