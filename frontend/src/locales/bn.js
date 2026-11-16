@@ -2749,4 +2749,8 @@ export default {
   'See less': 'কম দেখুন',
   'No workout this day': 'এই দিনে কোনো ওয়ার্কআউট নেই',
   'Plan this day': 'এই দিনের পরিকল্পনা করুন',
+  'Workout in progress': 'ওয়ার্কআউট চলছে',
+  'Latest workouts': 'সাম্প্রতিক ওয়ার্কআউট',
+  'My plans': 'আমার পরিকল্পনা',
+  'Exercise library': 'ব্যায়ামের লাইব্রেরি',
 }

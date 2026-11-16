@@ -2725,4 +2725,8 @@ export default {
   'See less': 'عرض أقل',
   'No workout this day': 'لا يوجد تمرين في هذا اليوم',
   'Plan this day': 'خطط لهذا اليوم',
+  'Workout in progress': 'تمرين قيد التنفيذ',
+  'Latest workouts': 'آخر التمارين',
+  'My plans': 'خططي',
+  'Exercise library': 'مكتبة التمارين',
 }

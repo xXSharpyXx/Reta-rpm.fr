@@ -2670,4 +2670,8 @@ export default {
   'See less': '收起',
   'No workout this day': '这天没有训练',
   'Plan this day': '安排这一天',
+  'Workout in progress': '训练进行中',
+  'Latest workouts': '最近的训练',
+  'My plans': '我的计划',
+  'Exercise library': '动作库',
 }

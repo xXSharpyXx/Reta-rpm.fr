@@ -2673,4 +2673,8 @@ export default {
   'See less': 'Kevesebb',
   'No workout this day': 'Ezen a napon nem volt edzés',
   'Plan this day': 'Nap tervezése',
+  'Workout in progress': 'Folyamatban lévő edzés',
+  'Latest workouts': 'Legutóbbi edzések',
+  'My plans': 'Terveim',
+  'Exercise library': 'Gyakorlattár',
 }

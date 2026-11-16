@@ -2670,4 +2670,8 @@ export default {
   'See less': 'Daha az',
   'No workout this day': 'Bu gün antrenman yok',
   'Plan this day': 'Bu günü planla',
+  'Workout in progress': 'Devam eden antrenman',
+  'Latest workouts': 'Son antrenmanlar',
+  'My plans': 'Planlarım',
+  'Exercise library': 'Egzersiz kütüphanesi',
 }

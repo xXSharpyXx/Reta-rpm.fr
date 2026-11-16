@@ -37,9 +37,9 @@ const go = async to => { await act(async () => router.navigate(to)) }
 describe('root tab history', () => {
   it('does not accumulate a back stack when switching tabs repeatedly', async () => {
     for (let i = 0; i < 3; i++) {
-      for (const label of ['Plan', 'Stats', 'Home']) await tap(label)
+      for (const label of ['Workouts', 'Stats', 'Home']) await tap(label)
     }
-    await tap('Plan')
+    await tap('Workouts')
     expect(router.state.location.pathname).toBe('/plan')
     await go(-1)
     expect(router.state.location.pathname).toBe('/plan')
@@ -56,7 +56,7 @@ describe('root tab history', () => {
   })
 
   it('still pushes a detail page and returns to the tab it opened from', async () => {
-    await tap('Plan')
+    await tap('Workouts')
     await go('/plan/r/one')
     await go(-1)
     expect(router.state.location.pathname).toBe('/plan')
@@ -67,24 +67,21 @@ describe('root tab history', () => {
 
   it('opens a different tab root from a nested page of the active tab', async () => {
     await go('/plan/r/one')
-    await tap('Plan')
+    await tap('Workouts')
     expect(router.state.location.pathname).toBe('/plan')
     expect(router.state.historyAction).toBe('REPLACE')
   })
 
-  it('preserves the workout chooser return path', async () => {
-    useStore.setState({ S: { ...useStore.getState().S, routines: [] } })
-    await tap('Start')
-    expect(router.state.location.pathname).toBe('/workout')
-    await go(-1)
-    expect(router.state.location.pathname).toBe('/home')
+  // The middle button opens the Workouts page and starts nothing; with a session running it
+  // goes back to that session.
+  it('opens the Workouts page without starting anything, and resumes a running session', async () => {
+    await tap('Workouts')
+    expect(router.state.location.pathname).toBe('/plan')
     expect(onStart).not.toHaveBeenCalled()
+    await go('/home')
+    act(() => { useStore.getState().update(s => { s.active = { id: 'a', name: 'Push', entries: [], cur: 0 } }, false) })
+    await tap('Resume')
+    expect(router.state.location.pathname).toBe('/workout')
   })
 
-  it('opens the session picker from Start when there are routines, even on a day off', async () => {
-    act(() => useStore.setState({ S: { ...useStore.getState().S, routines: [{ id: 'r1', name: 'Push', ex: [{ id: '0025' }] }], week: {}, dayPlan: {} } }))
-    await tap('Start')
-    expect(onStart).toHaveBeenCalledWith([])
-    expect(router.state.location.pathname).toBe('/home')
-  })
 })

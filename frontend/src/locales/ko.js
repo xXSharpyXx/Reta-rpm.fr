@@ -2670,4 +2670,8 @@ export default {
   'See less': '접기',
   'No workout this day': '이날은 운동 기록이 없어요',
   'Plan this day': '이날 계획하기',
+  'Workout in progress': '진행 중인 운동',
+  'Latest workouts': '최근 운동',
+  'My plans': '내 계획',
+  'Exercise library': '운동 라이브러리',
 }

@@ -2670,4 +2670,8 @@ export default {
   'See less': 'Ver menos',
   'No workout this day': 'Nenhum treino neste dia',
   'Plan this day': 'Planear este dia',
+  'Workout in progress': 'Treino em curso',
+  'Latest workouts': 'Últimos treinos',
+  'My plans': 'Os meus planos',
+  'Exercise library': 'Biblioteca de exercícios',
 }

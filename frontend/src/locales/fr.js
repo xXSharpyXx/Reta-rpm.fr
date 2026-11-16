@@ -2645,7 +2645,7 @@ export default {
   'Show results ({0})': 'Afficher {0} résultats',
   'Suspension': 'Sangle de suspension',
   'Choose your session': 'Choisis ta séance',
-  'Freestyle workout': 'Entraînement libre',
+  'Freestyle workout': 'Séance libre',
   'My sessions': 'Mes séances',
   'Normal set': 'Série normale',
   'Pick the exercises as you go': 'Tu choisis les exos au fur et à mesure',
@@ -2670,4 +2670,8 @@ export default {
   'See less': 'Voir moins',
   'No workout this day': 'Aucune séance ce jour',
   'Plan this day': 'Planifier ce jour',
+  'Workout in progress': 'Séance en cours',
+  'Latest workouts': 'Mes dernières séances',
+  'My plans': 'Mes plans',
+  'Exercise library': 'Bibliothèque d’exercices',
 }

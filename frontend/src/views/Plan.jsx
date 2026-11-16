@@ -2,15 +2,19 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { DAYN, DAYS, weekOrder, weekStartOf, uid, exCount, routineCount } from '../lib/format.js'
+import { DAYN, DAYS, weekOrder, weekStartOf, uid, exCount, routineCount, todayISO, fmtDaysAgo } from '../lib/format.js'
+import { effectiveRoutineIds } from '../lib/history.js'
+import { todaySession } from '../lib/today-session.js'
+import { lastDoneOf } from '../lib/session-picker.js'
 import { t } from '../lib/i18n.js'
 import {
   dayAssignSheet, starterPlanSheet, menuSheet,
   planHasRoutines, exportPlanFile, printWholePlan, importPlanFile,
+  startSession, workoutDetailSheet, WorkoutRow,
 } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
-import { Button, Row, Section, Segmented } from '../components/ui.jsx'
+import { Button, Row, Section } from '../components/ui.jsx'
 import SwipeRow from '../components/SwipeRow.jsx'
 import { copyRoutine, deleteRoutine, restoreRoutine, routineSnapshot } from '../lib/routines.js'
 import MiniBodyMap from '../components/MiniBodyMap.jsx'
@@ -23,14 +27,6 @@ import { MOBILE } from '../lib/mobile.js'
 import { coachAvailable } from '../lib/coach.js'
 import { deriveSessionName } from '../lib/session-merge.js'
 import { markUndone, undoMarks } from '../lib/sync-merge.js'
-
-// Plan has two views (v1.3.11): Schedule (how you train, and when) and Routines (what you
-// train). The last one you looked at comes back: a per-device convenience, never synced, so it
-// lives in this browser's storage and not in S.
-export const PLAN_VIEW_KEY = 'gym_plan_view'
-const readView = () => {
-  try { return localStorage.getItem(PLAN_VIEW_KEY) === 'routines' ? 'routines' : 'schedule' } catch { return 'schedule' }
-}
 
 /* Undo for Plan's two removals (v1.3.11). Both go through the store's normal update, so sync
    sees an ordinary edit (a routine put back clears its own removal stamp, lib/sync-merge.js). */
@@ -60,6 +56,10 @@ export function undoDeleteRoutine(snap) {
 // The flash a row lands with when a swipe brought it (a duplicate, an undo): one per new value.
 let flashSeq = 0
 
+/* The Workouts page (one tab, in place of Plan and Start). Top to bottom: the performance review,
+   today's session with a big Start, the other sessions and a free one, the latest workouts done,
+   and the fixed week with its sessions to edit. Starting from here asks no confirmation: every
+   button already names what it starts. */
 export default function Plan() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -68,20 +68,12 @@ export default function Plan() {
   const coachMode = useStore(s => s.coachLocal?.mode)
   const user = useStore(s => s.user)
   const fileRef = useRef(null)
-  const [view, setViewState] = useState(readView)
-  const setView = v => {
-    setViewState(v)
-    try { localStorage.setItem(PLAN_VIEW_KEY, v) } catch { /* private mode: the view just isn't remembered */ }
-  }
 
-  /* The Coach's way in from Plan: its own button in the header (a banner over the week was too
-     loud, the last entry of the share menu too hidden). Gated by the same predicate every other
-     Coach surface uses, so an instance without the feature sees exactly the header it would have
-     without it. */
+  /* The Coach's way in: its own button in the header, gated by the same predicate every other
+     Coach surface uses, so an instance without the feature sees the header it would have without. */
   const showCoach = coachAvailable(config, user, { demo: DEMO, mobile: MOBILE, coachMode })
 
-  // Share, print, import and starter plans: one menu behind the header button, so the
-  // two views below are only about the plan itself.
+  // Share, print, import and starter plans: one menu behind the header button.
   const openMenu = () => {
     const has = planHasRoutines(S)
     menuSheet({
@@ -100,7 +92,7 @@ export default function Plan() {
   return <div className="narrow plan">
     <div className="hdr">
       <SeasonDeco spot="header-bats" />
-      <div><h1>{t('Plan')}</h1><div className="sub">{t('Your weekly routine')}</div></div>
+      <div><h1>{t('Workouts')}</h1><div className="sub">{t(DAYN[new Date().getDay()])}</div></div>
       <div className="hdr-actions">
         {showCoach && <Button size="sm" variant="tinted" icon="sparkles" onClick={() => nav('/coach')}>{t('Coach')}</Button>}
         <button className="iconbtn" onClick={openMenu} aria-label={t('Plan options')} title={t('Plan options')}><Icon name="share" /></button>
@@ -111,12 +103,87 @@ export default function Plan() {
       <Row icon="sparkles" iconTint="var(--acc)" title={t('Analyze my latest performance')} subtitle={t('Progress, stalls, records and an AI review')}
         accessory="chevron" onClick={() => nav('/plan/bilan')} />
     </Section>
-    <Segmented className="plan-views" value={view} onChange={setView}
-      options={[{ value: 'schedule', label: t('Schedule') }, { value: 'routines', label: t('Routines') }]} />
-    {view === 'routines'
-      ? <Routines S={S} update={update} nav={nav} />
-      : <Schedule S={S} nav={nav} />}
+    <TodayCard S={S} nav={nav} />
+    {!S.active && <OtherWorkouts S={S} />}
+    <LatestWorkouts S={S} nav={nav} />
+    <h4 className="sec plan-h">{t('My plans')}</h4>
+    <Schedule S={S} nav={nav} />
+    <Routines S={S} update={update} nav={nav} />
+    <Section className="plan-link">
+      <Row icon="dumbbell" iconTint="var(--indigo)" title={t('Exercise library')} accessory="chevron" onClick={() => nav('/library')} />
+    </Section>
   </div>
+}
+
+/* ================================ Today ================================ */
+
+// Today's session from the fixed week, with one big button. A session in progress takes its
+// place (Resume), a session already done says so, and a rest day names the next one.
+function TodayCard({ S, nav }) {
+  const today = todaySession(S, todayISO())
+  const start = () => startSession(today.ids)
+  if (S.active) {
+    const editing = !!S.active.editingWorkoutId
+    return <div className="card today-card on">
+      <div className="today-lbl">{editing ? t('Edit workout') : t('Workout in progress')}</div>
+      <div className="today-name">{S.active.name}</div>
+      <Button variant="primary" icon={editing ? 'pencil' : 'play'} className="today-go" onClick={() => nav('/workout')}>{editing ? t('Edit') : t('Resume')}</Button>
+    </div>
+  }
+  if (!today.routines.length) {
+    return <div className="card today-card">
+      <div className="today-lbl">{t('Today')}{today.rescheduled ? ' · ' + t('rescheduled') : ''}</div>
+      <div className="today-name">{today.done ? t('{0} (done)', today.done.name || t('Workout')) : t('Rest day')}</div>
+      {today.next && !today.done && <div className="today-sub">{t('Next session: {0}, {1}', t(DAYN[today.next.weekday]), today.next.routine.name)}</div>}
+    </div>
+  }
+  const n = today.routines.reduce((k, r) => k + r.ex.length, 0)
+  return <div className={'card today-card' + (today.done ? '' : ' on')}>
+    <div className="today-lbl">{t("Today's plan")}{today.rescheduled ? ' · ' + t('rescheduled') : ''}</div>
+    <div className="row" style={{ gap: 12, alignItems: 'center' }}>
+      <div className="grow" style={{ minWidth: 0 }}>
+        <div className="today-name">{today.done ? t('{0} (done)', today.name) : today.name}</div>
+        <div className="today-sub">{exCount(n)}</div>
+      </div>
+      <MiniBodyMap routines={today.routines} body={S.body} />
+    </div>
+    <Button variant={today.done ? 'tinted' : 'primary'} icon="play" className="today-go" onClick={start}>{t('Start {0}', today.name)}</Button>
+  </div>
+}
+
+// The other sessions, to start one instead of today's, and a free one picked as you go.
+function OtherWorkouts({ S }) {
+  const ids = new Set(effectiveRoutineIds(S, todayISO()))
+  const others = S.routines.filter(r => !ids.has(r.id))
+  // How many exercises, and when it was last done (lib/session-picker.js).
+  const lastSub = r => { const last = lastDoneOf(S.workouts, r.id); return [exCount(r.ex.length), last ? t('last time {0}', fmtDaysAgo(last)) : t('never done yet')].join(' · ') }
+  return <>
+    <h4 className="sec plan-h">{t('Other routines')}</h4>
+    <div className="list plan-others">
+      {others.map(r => <div key={r.id} className="item" {...tappable(() => startSession([r.id]))}>
+        <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
+        <div className="grow"><div className="tt">{r.name}</div><div className="ss">{lastSub(r)}</div></div>
+        <span className="tag acc">{t('Start')}</span>
+      </div>)}
+      <div className="item" {...tappable(() => startSession([]))}>
+        <span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="shuffle" /></span>
+        <div className="grow"><div className="tt">{t('Freestyle workout')}</div><div className="ss">{t('Pick the exercises as you go')}</div></div>
+        <span className="tag acc">{t('Start')}</span>
+      </div>
+    </div>
+  </>
+}
+
+// The last workouts done, newest first: a tap opens the same read-back as Stats.
+function LatestWorkouts({ S, nav }) {
+  if (!S.workouts.length) return null
+  return <>
+    <div className="row between plan-h">
+      <h4 className="sec" style={{ margin: 0 }}>{t('Latest workouts')}</h4>
+      <Button size="sm" variant="ghost" trailingIcon="chevronRight" onClick={() => nav('/history')}>{t('All')} {S.workouts.length}</Button>
+    </div>
+    <div className="list plan-latest">{[...S.workouts].reverse().slice(0, 5).map(w => <WorkoutRow key={w.id || w.start} w={w} onClick={() => workoutDetailSheet(w)} />)}</div>
+  </>
 }
 
 /* ================================ Schedule ================================ */
@@ -143,21 +210,10 @@ function Schedule({ S, nav }) {
   }
 
   return <>
-    {!S.routines.length && <div className="empty plan-empty">
-      <div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Make one, or grab the starter plan to get going.')}
-      <div style={{ marginTop: 12 }}><Button icon="clipboard" onClick={starterPlanSheet}>{t('Load starter plan')}</Button></div>
-    </div>}
-
-    <h4 className="sec">{t('This week')}</h4>
+    <h4 className="sec plan-sub">{t('This week')}</h4>
     <div className="list plan-week">{weekOrder(ws).map(dayRow)}</div>
     <p className="sect-f">{t('Want two routines on one day? Tap the day and pick both.')}</p>
 
-    {/* Weekly muscle volume is analysis: it moved to Stats, next to Muscle balance. Stats only
-        shows that card once there is a routine, so the link waits for one too. */}
-    {S.routines.length > 0 && <Section className="plan-link">
-      <Row icon="chart" iconTint="var(--indigo)" title={t('Weekly muscle volume')} subtitle={t('Now in Stats, next to Muscle balance')}
-        accessory="chevron" onClick={() => nav('/stats?focus=weekly-volume')} />
-    </Section>}
   </>
 }
 
@@ -206,6 +262,7 @@ function Routines({ S, update, nav }) {
   const sub = r => [exCount(r.ex.length), daysOf(r.id).join(', ')].filter(Boolean).join(' · ')
 
   return <>
+    <h4 className="sec plan-sub">{t('Routines')}</h4>
     <div className="row between plan-sec-h plan-routines-bar">
       {routines.length > 0
         ? <button className="plan-textbtn" aria-pressed={edit} onClick={() => setEdit(e => !e)}>{edit ? t('Done') : t('Edit')}</button>

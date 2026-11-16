@@ -2717,4 +2717,8 @@ export default {
   'See less': 'Visa mindre',
   'No workout this day': 'Inget pass den här dagen',
   'Plan this day': 'Planera dagen',
+  'Workout in progress': 'Pass pågår',
+  'Latest workouts': 'Senaste passen',
+  'My plans': 'Mina planer',
+  'Exercise library': 'Övningsbibliotek',
 }

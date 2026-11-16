@@ -2663,4 +2663,8 @@ export default {
   'See less': '收起',
   'No workout this day': '這天沒有訓練',
   'Plan this day': '安排這一天',
+  'Workout in progress': '訓練進行中',
+  'Latest workouts': '最近的訓練',
+  'My plans': '我的計畫',
+  'Exercise library': '動作庫',
 }

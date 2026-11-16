@@ -2681,4 +2681,8 @@ export default {
   'See less': 'ดูน้อยลง',
   'No workout this day': 'ไม่มีการออกกำลังกายในวันนี้',
   'Plan this day': 'วางแผนวันนี้',
+  'Workout in progress': 'กำลังออกกำลังกาย',
+  'Latest workouts': 'การออกกำลังกายล่าสุด',
+  'My plans': 'แผนของฉัน',
+  'Exercise library': 'คลังท่าออกกำลังกาย',
 }

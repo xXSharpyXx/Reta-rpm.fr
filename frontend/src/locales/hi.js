@@ -2670,4 +2670,8 @@ export default {
   'See less': 'कम देखें',
   'No workout this day': 'इस दिन कोई वर्कआउट नहीं',
   'Plan this day': 'इस दिन की योजना बनाएं',
+  'Workout in progress': 'वर्कआउट जारी है',
+  'Latest workouts': 'हाल के वर्कआउट',
+  'My plans': 'मेरी योजनाएं',
+  'Exercise library': 'एक्सरसाइज़ लाइब्रेरी',
 }

@@ -1,7 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { effectiveRoutineIds, effectiveRoutines } from '../lib/history.js'
-import { todayISO } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
 import Elapsed from './Elapsed.jsx'
@@ -19,7 +17,8 @@ function Tab({ active, icon, label, onClick, dot }) {
   )
 }
 
-export default function TabBar({ onStart }) {
+// `onStart` is no longer used: starting a session is the Workouts page's job.
+export default function TabBar() {
   const nav = useNavigate()
   const loc = useLocation()
   const S = useStore(s => s.S)
@@ -42,22 +41,13 @@ export default function TabBar({ onStart }) {
   }
 
   const running = !!S.active && cur !== 'workout' && !S.active.editingWorkoutId && !S.active.backfill && S.active.start > 0
-  const startWorkout = () => {
-    // No session yet: the "Choose your session" sheet (sheets.jsx startFlow), with today's
-    // session on top when the plan has one. A weekday can hold several routines, offered as the
-    // one combined session if any of them has exercises. With no routine at all there is nothing
-    // to choose from, so the Start screen says to build a plan first.
-    if (!S.active && S.routines.length) {
-      onStart(effectiveRoutines(S, todayISO()).some(r => r.ex.length) ? effectiveRoutineIds(S, todayISO()) : [])
-      return
-    }
-    nav('/workout')
-  }
+  // The middle button is the Workouts page (today's session, the others, the plan). With a
+  // session running it takes you back to it instead.
+  const startWorkout = () => { if (S.active) nav('/workout'); else switchTab('/plan') }
 
   return (
     <nav id="tabbar">
       <Tab active={on('home')} icon="house" label={t('Home')} dot={trouble} onClick={() => switchTab('/home')} />
-      <Tab active={on('plan')} icon="calendar" label={t('Plan')} onClick={() => switchTab('/plan')} />
       {/* On the workout screen itself there is nothing to resume, so the button reads as the
           tab it is and stays lit (#29); anywhere else it brings you back to the exercise you
           were on — the marker is kept in S.active.cur and never moves on its own (#21). The
@@ -65,11 +55,11 @@ export default function TabBar({ onStart }) {
           A live session you stepped away from shows its running time instead of a word, the
           button still named Resume; a past workout being edited or logged after the fact has no
           clock to run. */}
-      <button className={'start' + (S.active ? ' rec' : '') + (S.active && cur === 'workout' ? ' on' : '')} onClick={startWorkout}
+      <button className={'start' + (S.active ? ' rec' : '') + ((S.active ? cur === 'workout' : on('plan')) ? ' on' : '')} onClick={startWorkout}
         aria-label={running ? t('Resume') : undefined}>
         <span className="cir"><Icon name="play" /></span>
         {running ? <span className="tab-time"><Elapsed start={S.active.start} /></span>
-          : <span>{S.active ? (cur === 'workout' ? t('Workout') : S.active.editingWorkoutId ? t('Edit workout') : t('Resume')) : t('Start')}</span>}
+          : <span>{S.active ? (cur === 'workout' ? t('Workout') : S.active.editingWorkoutId ? t('Edit workout') : t('Resume')) : t('Workouts')}</span>}
       </button>
       <Tab active={on('stats')} icon="chart" label={t('Stats')} onClick={() => switchTab('/stats')} />
     </nav>
