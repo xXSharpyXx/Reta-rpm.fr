@@ -232,15 +232,20 @@ afterEach(async () => {
 })
 
 describe('Stats muscle recovery view runtime', () => {
-  // The card opens on Fatigue (Muscle balance, the view that came first, is gone); a muscle
-  // picked stays picked across the two views.
-  it('dispatches real clicks through Fatigue and Strength and preserves selection', async () => {
+  it('dispatches real clicks through Balance, Fatigue, and Strength and preserves selection', async () => {
     await mountStats()
+    expectPressed(viewButton('Muscle balance'))
+    expectPressed(balanceRangeButton('Week'))
+
+    await click(balanceRangeButton('30d'))
+    await click(buttonWithText(muscleCard(), 'All'))
+    await click(muscleCard().querySelector('[data-muscle="chest"]'))
+    expect(buttonWithText(muscleCard(), 'Hard')).toBeTruthy()
+
+    await click(viewButton('Fatigue'))
     expectPressed(viewButton('Fatigue'))
-    expect(viewButton('Muscle balance')).toBeFalsy()
     expect(lastMap().thresholds).toBeTruthy()
     expect(container.textContent).toContain('Fatigue shows how recently each muscle was trained. High means rest.')
-    await click(muscleCard().querySelector('[data-muscle="chest"]'))
     expect(container.querySelector('[data-selected-muscle="chest"]')).toBeTruthy()
 
     await click(viewButton('Strength'))
@@ -248,12 +253,17 @@ describe('Stats muscle recovery view runtime', () => {
     expect(lastMap().thresholds.at(-1)).toEqual({ at: 1, level: 4 })
     expect(container.textContent).toContain('Strength shows retained muscle strength. Train again to reset it.')
 
-    await click(viewButton('Fatigue'))
-    expectPressed(viewButton('Fatigue'))
+    await click(viewButton('Muscle balance'))
+    expectPressed(balanceRangeButton('30d'))
+    expect(buttonWithText(muscleCard(), 'Hard')).toBeTruthy()
+    expect(lastMap().selected).toBe('chest')
+    expect(lastMap().load.chest).toBe(7)
   })
 
-  it('updates the rendered Fatigue map on the real 60-second interval', async () => {
+  it('updates the rendered Fatigue map and Balance window on the real 60-second interval', async () => {
     await mountStats()
+    await click(balanceRangeButton('30d'))
+    await click(viewButton('Fatigue'))
     await click(muscleCard().querySelector('[data-muscle="chest"]'))
 
     const mountsBeforeTick = mocks.mapMounts
@@ -271,6 +281,8 @@ describe('Stats muscle recovery view runtime', () => {
 
     await click(viewButton('Strength'))
     expect(lastMap().load.quadriceps).toBeLessThan(1)
+    await click(viewButton('Muscle balance'))
+    expect(lastMap().load.chest).toBe(6)
   })
 
   it('shows the selected muscle fatigue as a labelled zone bar with a value marker', async () => {
@@ -344,6 +356,8 @@ describe('Stats muscle recovery view runtime', () => {
     }])])
     await mountStats()
 
+    expect(lastMap().load).toEqual({ chest: 1 })
+    await click(viewButton('Fatigue'))
     expect(lastMap().load.chest).toBeGreaterThan(0)
     expect(lastMap().load.biceps).toBe(0)
     expect(levelsOf(lastMap().load, lastMap().thresholds).biceps).toBe(0)

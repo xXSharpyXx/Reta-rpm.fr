@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Weekly muscle volume, as planned: it lived on Plan until v1.3.11 and is analysis, so it moved to
-// Stats (/stats?focus=weekly-volume still scrolls to it).
+// Stats, right after Muscle balance (Plan keeps a row that links here, /stats?focus=weekly-volume).
 // What it counts did not change: every weekday routine once, plus a running rotation's sessions.
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -79,11 +79,12 @@ describe('Stats — weekly muscle volume from the plan', () => {
     expect(card().querySelector('.weekly-plan-toggle').textContent).toBe('Show less')
   })
 
-  it('sits on Stats, with no Muscle balance card before it, and only once there are routines', () => {
+  it('sits on Stats right after Muscle balance, and only once there are routines', () => {
     mocks.S = state()
     act(() => root.render(<Stats />))
-    expect([...host.querySelectorAll('.card h2')].some(h => h.textContent.startsWith('Muscle balance'))).toBe(false)
-    expect(card()).toBeTruthy()
+    const balance = [...host.querySelectorAll('.card h2')].find(h => h.textContent.startsWith('Muscle balance'))?.closest('.card')
+    expect(balance).toBeTruthy()
+    expect(balance.nextElementSibling).toBe(card())
     expect(card().id).toBe('weekly-volume')
     mocks.S = state({ routines: [], week: {} })
     act(() => root.render(<Stats />))

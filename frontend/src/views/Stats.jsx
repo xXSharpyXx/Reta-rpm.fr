@@ -1,26 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { dayPhotosOf } from '../lib/day-photos.js'
 import { EXIDX, matchExercise, betterWeight, isAssisted } from '../lib/exercises.js'
 import { lastBW, streakWeeks, setLabel, modeOf, effortOf, entriesForExercise, metricEntriesForExercise, metricModeForEntry, bestWeightForEntry, completedRepsOf, workoutDay, workoutAt, lifetimeVolume } from '../lib/history.js'
-import { fmtNum, fmtDate, fmtVol, todayISO, exerciseNameText } from '../lib/format.js'
+import { fmtNum, fmtDate, fmtVol, todayISO, isoOf, weekKey, weekStartOf, exerciseNameText } from '../lib/format.js'
 import { speedUnitOf, speedLabel, toSpeed } from '../lib/speed.js'
 import { t, exerciseNameFor, exerciseNameClass, getLang } from '../lib/i18n.js'
-import { bwSheet, goalSheet, calendarSheet, dayOverrideSheet, workoutDetailSheet, exerciseHistorySheet, WorkoutRow, bwDeltaColor, weighInsSheet } from '../sheets.jsx'
+import { bwSheet, goalSheet, calendarSheet, dayOverrideSheet, workoutDetailSheet, exerciseHistorySheet, bwDeltaColor, weighInsSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import WeightRate from '../components/WeightRate.jsx'
 import Heatmap from '../components/Heatmap.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 import Icon from '../components/Icon.jsx'
 import { reportSheet } from '../components/ReportSheet.jsx'
-import BodyMap from '../components/BodyMap.jsx'
-import { loadOfWeeklyPlan, loadOfWorkouts, rankOf, MUSCLE_NAME, musclesOf } from '../lib/muscles.js'
+import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
+import { loadOfWeeklyPlan, loadOfWorkouts, muscleBalanceWindow, rankOf, MUSCLES, MUSCLE_NAME, musclesOf } from '../lib/muscles.js'
+import { fatigueOf, strengthOf, STRENGTH_FLOOR, LB_TO_KG } from '../lib/recovery.js'
 import { strengthExerciseRowsForMuscle } from '../lib/strength-exercises.js'
 import { fatigueStateOf, fatigueRecoveryMs, fmtRecoveryIn } from '../lib/recovery-view.js'
-import { tappable } from '../lib/use-sheet-keyboard.js'
-import { isWarmupRow } from '../lib/workout-model.js'
-import { fatigueOf, strengthOf, STRENGTH_FLOOR, LB_TO_KG } from '../lib/recovery.js'
 import { e1rmSeries, best1RM, formulaOf } from '../lib/onerm.js'
 import { currentDbLoad, workoutAs } from '../lib/dumbbells.js'
 import { maxRepsSeries } from '../lib/pyramid.js'
@@ -29,10 +26,12 @@ import { perSetSessions, perSetLines, dropOffSet } from '../lib/per-set.js'
 import { relativeSeries } from '../lib/relative-strength.js'
 import {
   hasEffort, hasEstimableEffort, displayScale, scaleName, toScale, avgRir, effortSummary, effortWeeks,
-  effortHistogram, HARD_RIR
+  effortHistogram, isHardSet, HARD_RIR
 } from '../lib/effort.js'
 import { anchorsByWorkout, resolveSetRir } from '../lib/recovery.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
+import { tappable } from '../lib/use-sheet-keyboard.js'
+import { isWarmupRow } from '../lib/workout-model.js'
 
 // Set 1 to 5 on the per-set chart — system colours, so each line keeps its hue in dark mode.
 const SET_COLORS = ['var(--blue)', 'var(--green)', 'var(--orange)', 'var(--purple)', 'var(--pink)']
@@ -44,17 +43,8 @@ const rangeOptions = () => [{ value: 30, label: '1M' }, { value: 90, label: '3M'
 // the memoised chart arrays below keep their identity (LineChart drops its hover on a new one).
 const rangeStart = days => (days ? Date.now() - days * 86400000 : 0)
 
-// The user's own last registered bodyweight, in kg: the body-mass part of a bodyweight
-// exercise's load for estimated effort.
-function profileBodyweightKg(S) {
-  const entries = S.bodyweight || []
-  if (!entries.length) return null
-  const last = entries.slice().sort((a, b) => String(a.d).localeCompare(String(b.d))).at(-1)
-  if (!last || !(last.w > 0)) return null
-  return S.unit === 'lb' ? last.w * LB_TO_KG : last.w
-}
-// When each muscle was last trained, for the Strength view: "Weeks since training" beside a muscle
-// that has lost strength.
+// Which muscles the training in a window actually hit — and, the point of the card,
+// which ones it keeps missing. Shading is relative within the window (lib/muscles.js).
 function latestMuscleTraining(workouts) {
   const latest = {}
   for (const workout of workouts || []) {
@@ -161,12 +151,24 @@ function fatigueLabel(value) {
   return t(state === 'ready' ? 'Ready' : state === 'recovering' ? 'Recovering' : 'Fatigued')
 }
 
-/* Fatigue and Strength (the Muscle balance view that shared this card is gone): the body map shaded
-   by how recently each muscle was trained, or by how much strength it keeps. A muscle tapped shows
-   its recovery, or its exercises with their estimated 1RM. */
-function FatigueStrength({ S }) {
-  const [view, setView] = useState('fatigue')
+// The user's own last registered bodyweight, in kg: the body-mass part of a bodyweight
+// exercise's load for fatigue and for estimated effort, so both read the same set the same way.
+function profileBodyweightKg(S) {
+  const entries = S.bodyweight || []
+  if (!entries.length) return null
+  const last = entries.slice().sort((a, b) => String(a.d).localeCompare(String(b.d))).at(-1)
+  if (!last || !(last.w > 0)) return null
+  return S.unit === 'lb' ? last.w * LB_TO_KG : last.w
+}
+
+function MuscleBalance({ S }) {
+  const nav = useNavigate()
+  const [view, setView] = useState('balance')
+  const [win, setWin] = useState(7)
+  const [weekOffset, setWeekOffset] = useState(0)
+  const [hard, setHard] = useState(false)
   const [sel, setSel] = useState(null)
+  const [weeklyExpanded, setWeeklyExpanded] = useState(false)
   const now = useNow(S)
   const lang = getLang()
   const workouts = S.workouts
@@ -181,19 +183,126 @@ function FatigueStrength({ S }) {
     return t('Weeks since training: {0}', weeks)
   }
   const toggleSel = m => setSel(s => (s === m ? null : m))
-  // Selected-muscle detail for the Fatigue view: the same display value that shades the map, as a
-  // percentage, plus when it drops back through the bands.
+  // The exercises for a muscle (#553): the untrained chips, and an untrained muscle tapped on the map.
+  const openMuscle = m => nav('/muscles?m=' + encodeURIComponent(m), { state: { from: '/stats' } })
+  const findExercises = m => <button type="button" className="mchip miss mfind" data-find-exercises={m}
+    aria-label={t('Exercises for {0}', t(MUSCLE_NAME[m]))} onClick={() => openMuscle(m)}>{t('Exercises')}<Icon name="chevronRight" /></button>
+  // Selected-muscle detail for the Fatigue view: the same display value that
+  // shades the map, as a percentage, plus when it drops back through the bands.
   const selFatigue = sel ? (fatigue[sel] || 0) : 0
   const selRecovery = sel ? fatigueRecoveryMs(selFatigue, sel) : { toRecoveringMs: null, toReadyMs: null }
+  const ws = weekStartOf(S)
+  const currentWeek = weekKey(todayISO(), ws)
+  const selectedWeekDate = new Date(currentWeek + 'T12:00:00')
+  selectedWeekDate.setDate(selectedWeekDate.getDate() + weekOffset * 7)
+  const selectedWeek = isoOf(selectedWeekDate)
+  const weekly = win === 7
+  const inWin = weekly
+    ? S.workouts.filter(workout => workoutDay(workout) && weekKey(workoutDay(workout), ws) === selectedWeek)
+    : muscleBalanceWindow(S.workouts, win, now, todayISO(), ws)
+  // Counting only the sets taken near failure turns the map from "where did the volume go"
+  // into "where did the stimulus go" — a muscle can lead on sets and still never be trained
+  // hard. Offered only when the window holds ratings at all, since with none the hard map
+  // would just be empty and read as "you trained nothing".
+  const rated = inWin.some(w => w.entries.some(e => e.sets.some(s => s.done && isHardSet(s))))
+  const on = !weekly && hard && rated
+  const load = loadOfWorkouts(inWin, on ? isHardSet : null)
+  const planned = weekly && weekOffset === 0 ? loadOfWeeklyPlan(S) : {}
+  const comparisonMuscles = MUSCLES
+    .filter(muscle => (planned[muscle] || 0) > 0 || (load[muscle] || 0) > 0)
+    .sort((a, b) => (load[b] || 0) - (load[a] || 0) || (planned[b] || 0) - (planned[a] || 0) || MUSCLES.indexOf(a) - MUSCLES.indexOf(b))
   const volWin = S.workouts.filter(w => workoutAt(w) > now - 90 * 86400000)
   const vol90 = loadOfWorkouts(volWin, null)
+  const { worked, missed } = rankOf(load)
   const { worked: strengthOrder } = rankOf(strength)
   const detrained = strengthOrder.filter(slug => strength[slug] < 1)
+  const top = worked.slice(0, 4)
+  const completedMuscles = weekly && weeklyExpanded ? worked : top
+  const max = worked.length ? load[worked[0]] : 0
+  const sets = m => fmtNum(Math.round((load[m] || 0) * 10) / 10)
+  const visibleComparisonMuscles = sel ? [sel] : weeklyExpanded ? comparisonMuscles : comparisonMuscles.slice(0, 4)
+  const comparisonRows = visibleComparisonMuscles.map(muscle => {
+    const completed = Math.round((load[muscle] || 0) * 10) / 10
+    const target = Math.round((planned[muscle] || 0) * 10) / 10
+    const percentage = target > 0 ? Math.round(completed / target * 100) : null
+    const fill = target > 0 ? Math.round(Math.min(completed / target, 1) * 100) : completed > 0 ? 100 : 0
+    const completedSets = t('{0} sets', fmtNum(completed))
+    const plannedSets = t('{0} sets', fmtNum(target))
+    const find = sel === muscle && !completed
+    return <div className={find ? 'mrow has-find' : 'mrow'} data-muscle-volume={muscle} key={muscle}>
+      <span className="nm">{sel === muscle ? <b>{t(MUSCLE_NAME[muscle])}</b> : t(MUSCLE_NAME[muscle])}</span>
+      <span className="bar"><i style={{ width: fill + '%' }} /></span>
+      <span className="v cmp"
+        aria-label={`${t('Completed')} ${completedSets} · ${t('Planned')} ${plannedSets}`}>
+        {fmtNum(completed)}/{fmtNum(target)}{percentage == null ? '' : ` · ${percentage}%`}
+      </span>
+      {find && findExercises(muscle)}
+    </div>
+  })
+  const completionSummary = <>
+    {missed.length > 0 && <>
+      <h4 className="sec" style={{ marginTop: 12 }}>{on ? t('No hard sets in this period') : t('Not trained in this period')}</h4>
+      {/* A tap opens the exercises for that muscle (#553). */}
+      <div className="mchips">{missed.map(m => <button type="button" key={m} className="mchip miss" data-muscle={m}
+        aria-label={t('Exercises for {0}', t(MUSCLE_NAME[m]))} onClick={() => openMuscle(m)}>{t(MUSCLE_NAME[m])}</button>)}</div>
+    </>}
+    {!missed.length && worked.length > 0 &&
+      <div className="muted small" style={{ marginTop: 10 }}>{on
+        ? t('Every muscle group got at least one hard set in this period.')
+        : t('Every muscle group got some work in this period.')}</div>}
+  </>
+  const weeklyToggle = rowCount => weekly && !sel && rowCount > 4 && <>
+    <div style={{ height: 8 }} />
+    <Button className="weekly-volume-toggle" trailingIcon="chevronDown" aria-expanded={weeklyExpanded}
+      onClick={() => setWeeklyExpanded(expanded => !expanded)}>
+      {t(weeklyExpanded ? 'Show less' : 'Show more')}
+    </Button>
+  </>
+  const completedRows = <>
+    {sel && <div className={load[sel] > 0 ? 'mrow' : 'mrow has-find'} data-muscle-volume={sel} style={{ borderTop: 'var(--hair) solid var(--sep)', marginTop: 4, paddingTop: 10 }}>
+      <span className="nm"><b>{t(MUSCLE_NAME[sel])}</b></span>
+      <span className="v">{load[sel] > 0 ? t('{0} sets', sets(sel)) : on ? t('no hard sets') : t('not trained')}</span>
+      {!(load[sel] > 0) && findExercises(sel)}
+    </div>}
+    {!sel && completedMuscles.map(m => <div key={m} className="mrow" data-muscle-volume={m}>
+      <span className="nm">{t(MUSCLE_NAME[m])}</span>
+      <span className="bar"><i style={{ width: Math.round(load[m] / max * 100) + '%', background: on ? 'var(--yellow)' : undefined }} /></span>
+      <span className="v">{t('{0} sets', sets(m))}</span>
+    </div>)}
+    {weeklyToggle(worked.length)}
+    {completionSummary}
+  </>
 
-  return <div className="card" data-fatigue-strength>
-    <Segmented className="seg-range" value={view} onChange={v => { setView(v); setSel(null) }}
-      options={[{ value: 'fatigue', label: t('Fatigue') }, { value: 'strength', label: t('Strength') }]} />
-    {view === 'fatigue' ? <>
+  return <div className="card">
+    <Segmented className="seg-range" value={view} onChange={setView}
+      options={[{ value: 'balance', label: t('Muscle balance') }, { value: 'fatigue', label: t('Fatigue') }, { value: 'strength', label: t('Strength') }]} />
+    {view === 'balance' ? <>
+      <div className="row between" style={{ marginBottom: 8 }}>
+        <h2 style={{ margin: 0 }}>{t('Muscle balance')} <span className="dim" style={{ textTransform: 'none', letterSpacing: 0 }}>· {on ? t('by hard sets') : t('by sets worked')}</span></h2>
+        {!weekly && rated && <Button size="sm" icon="gauge" style={on ? { color: 'var(--yellow)' } : undefined}
+          onClick={() => { setHard(h => !h); setSel(null) }}>{on ? t('Hard') : t('All')}</Button>}
+      </div>
+      <Segmented className="seg-range" value={win} onChange={v => { setWin(v); setSel(null); setWeeklyExpanded(false) }}
+        options={[{ value: 7, label: t('Week') }, { value: 30, label: '30d' }, { value: 90, label: '90d' }, { value: 0, label: t('All') }]} />
+      {weekly ? <div data-weekly-volume-comparison data-week={selectedWeek}>
+        <div className="row between" style={{ margin: '10px 0 6px' }}>
+          <button className="iconbtn sm" aria-label={t('Previous week')} onClick={() => { setWeekOffset(offset => offset - 1); setSel(null); setWeeklyExpanded(false) }}><Icon name="chevronLeft" /></button>
+          <span className="small" style={{ fontWeight: 600 }}>{t('Week of {0}', fmtDate(selectedWeek))}</span>
+          <button className="iconbtn sm" aria-label={t('Next week')} disabled={weekOffset === 0}
+            onClick={() => { setWeekOffset(offset => Math.min(0, offset + 1)); setSel(null); setWeeklyExpanded(false) }}><Icon name="chevronRight" /></button>
+        </div>
+        <BodyMap className="tappable" load={load} body={S.body} selected={sel} onMuscle={toggleSel} />
+        <BodyMapLegend />
+        {weekOffset === 0
+          ? comparisonRows.length ? <>{comparisonRows}{weeklyToggle(comparisonMuscles.length)}{completionSummary}</> : <div className="muted small">{t('No workouts in this period yet.')}</div>
+          : inWin.length ? completedRows : <div className="muted small">{t('No workouts in this period yet.')}</div>}
+      </div> : inWin.length ? <>
+        <BodyMap className="tappable" load={load} body={S.body} selected={sel}
+          onMuscle={toggleSel} />
+        <BodyMapLegend />
+        {completedRows}
+      </> : <div className="muted small">{t('No workouts in this period yet.')}</div>}
+    </> : view === 'fatigue' ? <>
       <h2>{t('Fatigue')}</h2>
       <BodyMap className="tappable hm-fatigue" load={fatigue} thresholds={FATIGUE_LEVELS} body={S.body} selected={sel} onMuscle={toggleSel} />
       <FatigueLegend />
@@ -250,6 +359,7 @@ function FatigueStrength({ S }) {
     </>}
   </div>
 }
+
 
 // How hard the training was — the half of the picture a volume chart cannot show. Everything
 // is computed in RIR (lib/effort.js) and converted to whichever scale this profile reads.
@@ -336,7 +446,7 @@ function EffortCard({ S }) {
 // Stats = the analytics hub: all charts, progress and history live here.
 // The muscle volume your plan programs in a week: every weekday routine once, plus each session
 // of a running rotation (lib/muscles.js loadOfWeeklyPlan). It used to sit on Plan; it is analysis,
-// so it lives here now (/stats?focus=weekly-volume).
+// so it lives here now, next to Muscle balance, and Plan links to it (/stats?focus=weekly-volume).
 const PLAN_VOLUME_ROWS = 5
 export function WeeklyPlanVolume({ S }) {
   const [all, setAll] = useState(false)
@@ -637,26 +747,10 @@ export default function Stats() {
       />
     </div>
 
-    {workouts.length > 0 && <FatigueStrength S={S} />}
+    {(workouts.length > 0 || Object.keys(loadOfWeeklyPlan(S)).length > 0) && <MuscleBalance S={S} />}
     {S.routines.length > 0 && <WeeklyPlanVolume S={S} />}
-    {workouts.length > 0 && <div className="card row between" style={{ alignItems: 'center', gap: 12 }}>
-      <div style={{ minWidth: 0 }}><h2 style={{ margin: 0 }}>{t('Structural balance')}</h2>
-        <div className="muted small" style={{ marginTop: 4 }}>{t('See which lift is holding back the rest.')}</div></div>
-      <Button size="sm" variant="tinted" trailingIcon="chevronRight" style={{ flexShrink: 0 }} onClick={() => nav('/structural-balance')}>{t('Open')}</Button>
-    </div>}
-    {(workouts.length > 0 || dayPhotosOf(S).length > 0) && <div className="card row between" style={{ alignItems: 'center', gap: 12 }}>
-      <div style={{ minWidth: 0 }}><h2 style={{ margin: 0 }}>{t('Progress photos')}</h2>
-        <div className="muted small" style={{ marginTop: 4 }}>{t('Every progress photo, lined up by date, for any day. Plus a before/after slider.')}</div></div>
-      <Button size="sm" variant="tinted" trailingIcon="chevronRight" style={{ flexShrink: 0 }} onClick={() => nav('/progress-photos')}>{t('Open')}</Button>
-    </div>}
-    <div className="card row between" style={{ alignItems: 'center', gap: 12 }}>
-      <SeasonDeco spot="stats-peek" />
-      <div style={{ minWidth: 0 }}><h2 style={{ margin: 0 }}>{t('Body measurements')}</h2>
-        <div className="muted small" style={{ marginTop: 4 }}>{(S.measurements || []).length
-          ? t('Last check-in {0}', fmtDate(S.measurements[S.measurements.length - 1].d, true))
-          : t('Waist, arms, body fat and anything else you measure, each with its own curve.')}</div></div>
-      <Button size="sm" variant="tinted" trailingIcon="chevronRight" style={{ flexShrink: 0 }} onClick={() => nav('/measurements')}>{t('Open')}</Button>
-    </div>
+    {/* Structural balance, Progress photos and Body measurements left Stats (owner, 2026-11-17):
+        so did the recent workouts (History, the header button, lists them all). */}
     {(hasEffort(S) || hasEstimableEffort(S)) && <EffortCard S={S} />}
 
     <div className="cols">
@@ -743,13 +837,5 @@ export default function Stats() {
         </> : <div className="muted small">{t('Finish your first workout and your progress curves will show up here.')}</div>}
       </div>
     </div>
-
-    {workouts.length > 0 && <>
-      <div className="row between" style={{ marginBottom: 10 }}>
-        <h4 className="sec" style={{ margin: 0 }}>{t('Recent workouts')}</h4>
-        <Button size="sm" variant="ghost" trailingIcon="chevronRight" onClick={() => nav('/history')}>{t('All')} {workouts.length}</Button>
-      </div>
-      <div className="list">{[...workouts].reverse().slice(0, 6).map(w => <WorkoutRow key={w.id} w={w} onClick={() => workoutDetailSheet(w)} />)}</div>
-    </>}
   </>
 }

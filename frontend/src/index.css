@@ -426,6 +426,9 @@ h4.sec{
 .btn.sm .icn{font-size:16px}
 .btn.xs{padding:5px 10px;width:auto;font-size:13px;border-radius:7px;gap:4px}
 .btn:disabled{opacity:.32;pointer-events:none}
+.weekly-volume-toggle{padding-block:0}
+.weekly-volume-toggle .icn{transition:transform var(--fast) var(--ease)}
+.weekly-volume-toggle[aria-expanded="true"] .icn{transform:rotate(180deg)}
 
 /* ----------------------------------------------------------- tab bar ----- */
 /* Nearly opaque, and deliberately so. At the old 72% the page read straight through the bar
@@ -1789,6 +1792,10 @@ body.no-tabbar #timer.working{box-shadow:inset 0 var(--hair) 0 var(--acc),0 -10p
 .mrow .bar{width:74px;height:5px;border-radius:3px;background:var(--surface-2);flex:none;overflow:hidden}
 .mrow .bar i{display:block;height:100%;background:var(--acc);border-radius:3px}
 .mrow .v{font-size:12px;color:var(--label-2);min-width:52px;text-align: end;flex:none}
+/* The Week view's "done/planned · %" (#573): wider than a set count, and as wide on every row, so
+   the bars line up the way they do in 30d, 90d and All. coach.css has a `.cmp` of its own (the
+   Coach's comparison rows) with a rule line and padding, loaded on every page: reset both here. */
+.mrow .v.cmp{min-width:92px;font-variant-numeric:tabular-nums;white-space:nowrap;border-top:none;padding:0}
 /* Selected-muscle fatigue detail: the legend's three bands as one bar, the value above
    its marker, the 0–100% endpoints under it and each zone named beneath itself. Ready is
    the map's unshaded base, so the left zone stays neutral; margins leave room for the
@@ -1820,6 +1827,16 @@ body.no-tabbar #timer.working{box-shadow:inset 0 var(--hair) 0 var(--acc),0 -10p
 .mchip{font-size:12px;padding:4px 9px;border-radius:99px;background:var(--surface-2);color:var(--label-2)}
 .mchip.miss{background:rgba(255,159,10,0.16);background:color-mix(in srgb,var(--orange) 16%,transparent);color:var(--orange)}
 button.mchip{border:none;font:inherit;font-size:12px;cursor:pointer}
+/* "Exercises ›" on an untrained muscle picked on the map (#553), at the end of its row. On a
+   narrow phone the row has no room for it (the name shrank to nothing at 320 and 360px, and the
+   Russian chip poked out of the card), so it wraps to a line of its own, still at the end; the
+   name keeps enough width to be read. The ::after stretches the tap area to 33px without making
+   the chip look any bigger. */
+.mchip.mfind{flex:none;display:inline-flex;align-items:center;gap:2px;padding-inline-end:6px;position:relative}
+.mchip.mfind::after{content:"";position:absolute;inset:-5px 0}
+.mrow.has-find{flex-wrap:wrap;row-gap:4px}
+.mrow.has-find .nm{flex-basis:0;min-width:64px}
+.mrow.has-find .mfind{margin-inline-start:auto}
 
 /* --- stat tiles --- */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}

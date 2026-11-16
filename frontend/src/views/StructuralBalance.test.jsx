@@ -199,21 +199,11 @@ describe('StructuralBalance view', () => {
   })
 })
 
-describe('the way in from Stats', () => {
-  it('is a card like the others that opens the screen, once there is a workout to read', () => {
+// Stats no longer carries a Structural balance card (owner, 2026-11-17); the screen itself stays.
+describe('Stats', () => {
+  it('offers no Structural balance card', () => {
     const host = render(Stats)
-    const card = [...host.querySelectorAll('.card')].find(c => c.querySelector('h2')?.textContent === 'Structural balance')
-    expect(card).toBeTruthy()
-    expect(card.textContent).toContain('See which lift is holding back the rest.')
-    const open = [...card.querySelectorAll('button')].find(b => b.textContent.includes('Open'))
-    act(() => open.click())
-    expect(navSpy).toHaveBeenCalledWith('/structural-balance')
-  })
-
-  it('is not offered before the first workout', () => {
-    useStore.setState({ S: clone(DEF), user: null })
-    const host = render(Stats)
-    expect(host.textContent).not.toContain('Structural balance')
+    expect([...host.querySelectorAll('.card h2')].some(h => h.textContent === 'Structural balance')).toBe(false)
   })
 })
 
