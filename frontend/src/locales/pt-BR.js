@@ -1670,6 +1670,14 @@ export const PT_BR_OVERRIDES = {
   'App icon': 'Ícone do app',
   'Just for this phone. Some home screens take a moment to catch up.': 'Só para este celular. Algumas telas iniciais demoram um pouco para perceber.',
   'Try the Halloween app icon': 'Experimente o ícone de Halloween do app',
+  'Routine template': 'Modelo da rotina',
+  'This workout is not the same as “{0}”.': 'Este treino não é igual a “{0}”.',
+  'Added: {0}.': 'Adicionado: {0}.',
+  'Left out: {0}.': 'Removido: {0}.',
+  '“{0}” now follows this workout': '“{0}” agora segue este treino',
+  '“{0}” stays as it was': '“{0}” continua como estava',
+  'Use this workout as the template': 'Usar este treino como modelo',
+  'Keep the current routine': 'Manter a rotina atual',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }

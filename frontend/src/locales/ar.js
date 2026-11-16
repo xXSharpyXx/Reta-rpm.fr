@@ -2643,4 +2643,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': 'لهذا الهاتف فقط. بعض الشاشات الرئيسية تحتاج لحظة لتلحق.',
   'The icon could not be changed.': 'تعذّر تغيير الأيقونة.',
   'Try the Halloween app icon': 'جرّب أيقونة التطبيق الخاصة بالهالوين',
+  'Routine template': 'قالب الروتين',
+  'This workout is not the same as “{0}”.': 'هذا التمرين ليس مطابقًا لـ «{0}».',
+  'Added: {0}.': 'أُضيف: {0}.',
+  'Left out: {0}.': 'حُذف: {0}.',
+  '“{0}” now follows this workout': '«{0}» يتبع هذا التمرين الآن',
+  '“{0}” stays as it was': '«{0}» يبقى كما كان',
+  'Use this workout as the template': 'استخدم هذا التمرين قالبًا',
+  'Keep the current routine': 'احتفظ بالروتين الحالي',
 }

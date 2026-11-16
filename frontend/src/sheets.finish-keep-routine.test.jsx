@@ -48,20 +48,38 @@ afterEach(() => {
 })
 
 describe('finish summary: keep an added exercise in the routine', () => {
-  it('offers it, and one tap adds it with the setup of the session', async () => {
+  // A routine session that differs from its routine asks once: keep it as the template, or not.
+  // The added exercise is part of that offer, so it is not asked about a second time.
+  it('offers it as part of the template, and one tap makes the session the routine', async () => {
     install([clone(bench), clone(raise)])
     act(() => finishWorkoutNow())
     renderTopSheet()
     await settle()
-    expect(host.querySelector('[data-keep-in-routine]')).toBeTruthy()
+    expect(host.querySelector('[data-keep-as-template]')).toBeTruthy()
+    expect(host.querySelector('[data-keep-in-routine]')).toBeNull()
     // Nothing changed yet: the offer is only an offer.
     expect(S().routines[0].ex.map(x => x.id)).toEqual(['0025'])
-    act(() => button('Add it to “Push A”').click())
+    act(() => button('Use this workout as the template').click())
     expect(S().routines[0].ex.map(x => x.id)).toEqual(['0025', '0334'])
+    expect(S().routines[0].ex[0]).toEqual({ id: '0025', sets: 1, reps: 5, weight: 60 })
     expect(S().routines[0].ex[1]).toMatchObject({ sets: 2, reps: 12, weight: 8 })
-    expect(host.textContent).toContain('Added to “Push A”')
+    expect(host.textContent).toContain('“Push A” now follows this workout')
     // The saved workout carries no trace of the marker.
     expect(JSON.stringify(S().workouts.at(-1))).not.toContain('addedInSession')
+    // And the toast takes it back.
+    act(() => useUI.getState().runToastAction())
+    expect(S().routines[0].ex.map(x => x.id)).toEqual(['0025'])
+    expect(host.textContent).toContain('“Push A” stays as it was')
+  })
+
+  it('keeps the routine as it is on Keep the current routine', async () => {
+    install([clone(bench), clone(raise)])
+    act(() => finishWorkoutNow())
+    renderTopSheet()
+    await settle()
+    act(() => button('Keep the current routine').click())
+    expect(S().routines[0].ex.map(x => x.id)).toEqual(['0025'])
+    expect(host.textContent).toContain('“Push A” stays as it was')
   })
 
   it('says nothing when the session added nothing', async () => {
@@ -70,5 +88,6 @@ describe('finish summary: keep an added exercise in the routine', () => {
     renderTopSheet()
     await settle()
     expect(host.querySelector('[data-keep-in-routine]')).toBeNull()
+    expect(host.querySelector('[data-keep-as-template]')).toBeNull()
   })
 })

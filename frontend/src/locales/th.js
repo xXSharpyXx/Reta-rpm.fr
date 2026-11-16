@@ -2599,4 +2599,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': 'เฉพาะโทรศัพท์เครื่องนี้ หน้าจอโฮมบางแบบต้องใช้เวลาสักครู่ถึงจะเปลี่ยน',
   'The icon could not be changed.': 'เปลี่ยนไอคอนไม่ได้',
   'Try the Halloween app icon': 'ลองไอคอนแอปฮาโลวีน',
+  'Routine template': 'เทมเพลตรูทีน',
+  'This workout is not the same as “{0}”.': 'การออกกำลังกายนี้ไม่เหมือน “{0}”',
+  'Added: {0}.': 'เพิ่ม: {0}',
+  'Left out: {0}.': 'ตัดออก: {0}',
+  '“{0}” now follows this workout': '“{0}” ตอนนี้เป็นไปตามการออกกำลังกายนี้',
+  '“{0}” stays as it was': '“{0}” ยังเหมือนเดิม',
+  'Use this workout as the template': 'ใช้การออกกำลังกายนี้เป็นเทมเพลต',
+  'Keep the current routine': 'เก็บรูทีนปัจจุบันไว้',
 }

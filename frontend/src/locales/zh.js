@@ -2588,4 +2588,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': '仅限这部手机。有些主屏幕要过一会儿才会跟上。',
   'The icon could not be changed.': '无法更换图标。',
   'Try the Halloween app icon': '试试万圣节应用图标',
+  'Routine template': '训练模板',
+  'This workout is not the same as “{0}”.': '这次训练和“{0}”不一样。',
+  'Added: {0}.': '新增：{0}。',
+  'Left out: {0}.': '未做：{0}。',
+  '“{0}” now follows this workout': '“{0}”现在按这次训练来',
+  '“{0}” stays as it was': '“{0}”保持不变',
+  'Use this workout as the template': '把这次训练设为模板',
+  'Keep the current routine': '保留当前训练计划',
 }

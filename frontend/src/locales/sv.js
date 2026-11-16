@@ -2635,4 +2635,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': 'Bara för den här telefonen. Vissa hemskärmar behöver en stund på sig att hänga med.',
   'The icon could not be changed.': 'Ikonen gick inte att byta.',
   'Try the Halloween app icon': 'Testa Halloween-appikonen',
+  'Routine template': 'Rutinmall',
+  'This workout is not the same as “{0}”.': 'Det här passet är inte samma som ”{0}”.',
+  'Added: {0}.': 'Tillagt: {0}.',
+  'Left out: {0}.': 'Utelämnat: {0}.',
+  '“{0}” now follows this workout': '”{0}” följer nu det här passet',
+  '“{0}” stays as it was': '”{0}” förblir som det var',
+  'Use this workout as the template': 'Använd det här passet som mall',
+  'Keep the current routine': 'Behåll nuvarande rutin',
 }

@@ -1,6 +1,7 @@
 import { uid } from './format.js'
 import { modeOf, defaultConfig, isPerSide, entryRoutineId, setsFromRows } from './history.js'
 import { isSideSet, isWarmupRow, hasCompletedWork, modeForEntry } from './workout-model.js'
+import { routineSlotIndex, updateRoutineFromEntry } from './routines.js'
 
 // A saved workout is evidence of what was logged, not a live routine. Copy only its flat
 // exercise setup on this explicit action; finishing a workout never calls this helper.
@@ -173,4 +174,77 @@ export function addToRoutine(routine, ex) {
   // groupIds again: a superset tag of the copies must not collide with one the routine has.
   routine.ex.push(...groupIds(fresh.map(cfg => structuredClone(cfg))))
   return fresh.length
+}
+
+// Superset tags are arbitrary ids: two lists group alike when the same neighbours share a tag.
+function comparable(ex) {
+  const tags = new Map()
+  return JSON.stringify(ex.map(cfg => {
+    const { sg, ...rest } = cfg || {}
+    if (sg == null || sg === '') return rest
+    if (!tags.has(sg)) tags.set(sg, tags.size)
+    return { ...rest, sg: tags.get(sg) }
+  }))
+}
+
+// One routine exercise as this session did it. An exercise that sits in the routine keeps its
+// slot (reps, weight, progression and backups stay the plan's: progression moves those every
+// session) and takes from the session what was changed by hand: the number of work sets, the
+// warm-ups, the rest and the note. One added or swapped in is copied the way Save as routine
+// copies it (copiedEntry).
+function templateEntry(routine, entries, idx) {
+  const entry = entries[idx]
+  const at = routineSlotIndex(routine, entries, idx)
+  if (at < 0) return copiedEntry(entry, routine)
+  const draft = { ...routine, ex: routine.ex.map(cfg => structuredClone(cfg)) }
+  updateRoutineFromEntry(draft, entries, idx)
+  const slot = draft.ex[at]
+  // Sets added or removed in the session move the plan by as many. Measured against today's
+  // prescription, not the plan: a set the progression added by itself is not an edit.
+  const work = (entry.sets || []).filter(row => !isWarmupRow(row)).length
+  const today = positive(entry.target?.sets) ?? positive(slot.sets) ?? 1
+  const delta = setsFromRows({ ...slot, id: slot.id }, work) - today
+  if (delta) slot.sets = Math.max(1, (positive(slot.sets) || 1) + delta)
+  const sg = scalarGroup(entry.sg)
+  if (sg) slot.sg = sg
+  else delete slot.sg
+  return slot
+}
+
+/**
+ * What finishing a routine's session offers (the summary's "Routine template"): keep the workout
+ * just done as the routine's new template, or keep the routine as it is. One offer per routine
+ * whose session differs from it (an exercise added, removed, swapped or moved, sets added or taken
+ * away, warm-ups, rest or note changed), and only when that routine had a completed set: a session
+ * that never started is not a model. Nothing is written here (applyTemplate does that).
+ * Each offer is `{ routineId, name, ex, added, removed }`, `added`/`removed` being exercise ids.
+ */
+export function routineTemplates(active, routines = []) {
+  const entries = sessionEntries(active)
+  const out = []
+  for (const routine of Array.isArray(routines) ? routines : []) {
+    if (!routine || !Array.isArray(routine.ex)) continue
+    const own = entries.map((entry, idx) => ({ entry, idx })).filter(x => x.entry?.rid === routine.id)
+    if (!own.some(x => (x.entry.sets || []).some(hasCompletedWork))) continue
+    const ex = own.map(x => templateEntry(routine, entries, x.idx))
+    if (comparable(ex) === comparable(routine.ex)) continue
+    const before = routine.ex.map(cfg => cfg?.id)
+    const after = ex.map(cfg => cfg.id)
+    out.push({
+      routineId: routine.id,
+      name: routine.name,
+      ex: groupIds(ex),
+      added: [...new Set(after.filter(id => !before.includes(id)))],
+      removed: [...new Set(before.filter(id => !after.includes(id)))],
+    })
+  }
+  return out
+}
+
+/** Make `ex` the routine's exercises (a store draft). Returns the exercises it replaced, for an Undo. */
+export function applyTemplate(routine, ex) {
+  if (!routine || !Array.isArray(routine.ex) || !Array.isArray(ex)) return null
+  const previous = routine.ex
+  routine.ex = ex.map(cfg => structuredClone(cfg))
+  return previous
 }

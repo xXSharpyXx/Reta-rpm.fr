@@ -199,21 +199,13 @@ describe('StructuralBalance view', () => {
   })
 })
 
+// Stats no longer links here: the card went from that screen, with Progress photos and Body measurements.
 describe('the way in from Stats', () => {
-  it('is a card like the others that opens the screen, once there is a workout to read', () => {
-    const host = render(Stats)
-    const card = [...host.querySelectorAll('.card')].find(c => c.querySelector('h2')?.textContent === 'Structural balance')
-    expect(card).toBeTruthy()
-    expect(card.textContent).toContain('See which lift is holding back the rest.')
-    const open = [...card.querySelectorAll('button')].find(b => b.textContent.includes('Open'))
-    act(() => open.click())
-    expect(navSpy).toHaveBeenCalledWith('/structural-balance')
-  })
-
-  it('is not offered before the first workout', () => {
-    useStore.setState({ S: clone(DEF), user: null })
+  it('is no longer on Stats', () => {
     const host = render(Stats)
     expect(host.textContent).not.toContain('Structural balance')
+    expect(host.textContent).not.toContain('Progress photos')
+    expect(host.textContent).not.toContain('Body measurements')
   })
 })
 

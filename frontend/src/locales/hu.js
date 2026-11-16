@@ -2591,4 +2591,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': 'Csak ezen a telefonon. Néhány kezdőképernyőnek kell egy pillanat, mire észreveszi.',
   'The icon could not be changed.': 'Nem sikerült megváltoztatni az ikont.',
   'Try the Halloween app icon': 'Próbáld ki a halloweeni alkalmazásikont',
+  'Routine template': 'Rutinsablon',
+  'This workout is not the same as “{0}”.': 'Ez az edzés nem ugyanaz, mint a(z) „{0}”.',
+  'Added: {0}.': 'Hozzáadva: {0}.',
+  'Left out: {0}.': 'Kihagyva: {0}.',
+  '“{0}” now follows this workout': '„{0}” most ezt az edzést követi',
+  '“{0}” stays as it was': '„{0}” marad, ahogy volt',
+  'Use this workout as the template': 'Ez az edzés legyen a sablon',
+  'Keep the current routine': 'A mostani rutin marad',
 }

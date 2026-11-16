@@ -2585,4 +2585,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': 'Лише для цього телефона. Деяким домашнім екранам треба хвилинка, щоб помітити.',
   'The icon could not be changed.': 'Не вдалося змінити значок.',
   'Try the Halloween app icon': 'Спробуй гелловінський значок застосунку',
+  'Routine template': 'Шаблон програми',
+  'This workout is not the same as “{0}”.': 'Це тренування відрізняється від «{0}».',
+  'Added: {0}.': 'Додано: {0}.',
+  'Left out: {0}.': 'Пропущено: {0}.',
+  '“{0}” now follows this workout': '«{0}» тепер повторює це тренування',
+  '“{0}” stays as it was': '«{0}» залишається як було',
+  'Use this workout as the template': 'Зробити це тренування шаблоном',
+  'Keep the current routine': 'Залишити поточну програму',
 }

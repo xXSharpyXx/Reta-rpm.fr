@@ -2588,4 +2588,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': 'Yalnızca bu telefon için. Bazı ana ekranların fark etmesi biraz sürer.',
   'The icon could not be changed.': 'Simge değiştirilemedi.',
   'Try the Halloween app icon': 'Cadılar Bayramı uygulama simgesini dene',
+  'Routine template': 'Rutin şablonu',
+  'This workout is not the same as “{0}”.': 'Bu antrenman “{0}” ile aynı değil.',
+  'Added: {0}.': 'Eklendi: {0}.',
+  'Left out: {0}.': 'Çıkarıldı: {0}.',
+  '“{0}” now follows this workout': '“{0}” artık bu antrenmanı izliyor',
+  '“{0}” stays as it was': '“{0}” olduğu gibi kalıyor',
+  'Use this workout as the template': 'Bu antrenmanı şablon olarak kullan',
+  'Keep the current routine': 'Mevcut rutini koru',
 }

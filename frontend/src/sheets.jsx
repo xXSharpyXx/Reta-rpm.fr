@@ -54,7 +54,7 @@ import { buildCompletedWorkout, sessionEnd } from './lib/finish-workout.js'
 import { refillAfter } from './lib/rotation.js'
 import { isWarmupRow, hasCompletedWork } from './lib/workout-model.js'
 import { ownExerciseRest } from './lib/supersetFlow.js'
-import { saveSessionAsRoutine, routineAdditions, addToRoutine } from './lib/session-routines.js'
+import { saveSessionAsRoutine, routineAdditions, addToRoutine, routineTemplates, applyTemplate } from './lib/session-routines.js'
 import { repeatSessionEntries } from './lib/session-repeat.js'
 import { swapActiveExercise } from './lib/active-exercise-swap.js'
 import { useSheetKeyboard, useRevealActiveChip, tappable } from './lib/use-sheet-keyboard.js'
@@ -3672,7 +3672,44 @@ function KeepInRoutine({ additions }) {
   </div>
 }
 
-function FinishSummary({ w, prs, e1prs = [], additions = [], close }) {
+// The finish summary's other question: the workout just done differs from its routine, so keep it
+// as the routine's template from now on, or keep the routine as it is. Nothing changes until one
+// is picked, and the replacement comes with an Undo.
+function KeepAsTemplate({ templates }) {
+  const [picked, setPicked] = useState({})
+  if (!templates?.length) return null
+  const nameOfEx = id => EXIDX[id] ? exerciseNameText(EXIDX[id]) : id
+  const use = o => {
+    let previous = null
+    update(s => { previous = applyTemplate(s.routines.find(r => r.id === o.routineId), o.ex) })
+    if (!previous) return
+    setPicked(x => ({ ...x, [o.routineId]: 'new' }))
+    ui().toast(t('Routine updated'), { action: t('Undo'), onAction: () => {
+      update(s => { const r = s.routines.find(x => x.id === o.routineId); if (r) r.ex = previous })
+      setPicked(x => ({ ...x, [o.routineId]: 'kept' }))
+    } })
+  }
+  return <div style={{ textAlign: 'start', marginBottom: 14 }} data-keep-as-template>
+    <h4 className="sec">{t('Routine template')}</h4>
+    {templates.map(o => <div key={o.routineId} style={{ marginBottom: 8 }}>
+      <div className="small dim" style={{ marginBottom: 6 }}>
+        {t('This workout is not the same as “{0}”.', o.name)}
+        {o.added.length > 0 && <> {t('Added: {0}.', o.added.map(nameOfEx).join(', '))}</>}
+        {o.removed.length > 0 && <> {t('Left out: {0}.', o.removed.map(nameOfEx).join(', '))}</>}
+      </div>
+      {picked[o.routineId] === 'new'
+        ? <div className="small accent row" style={{ gap: 6 }}><Icon name="checkCircle" /><span>{t('“{0}” now follows this workout', o.name)}</span></div>
+        : picked[o.routineId] === 'kept'
+        ? <div className="small dim row" style={{ gap: 6 }}><Icon name="checkCircle" /><span>{t('“{0}” stays as it was', o.name)}</span></div>
+        : <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <Button size="sm" variant="tinted" icon="clipboard" onClick={() => use(o)}>{t('Use this workout as the template')}</Button>
+          <Button size="sm" onClick={() => setPicked(x => ({ ...x, [o.routineId]: 'kept' }))}>{t('Keep the current routine')}</Button>
+        </div>}
+    </div>)}
+  </div>
+}
+
+function FinishSummary({ w, prs, e1prs = [], additions = [], templates = [], close }) {
   const st = useStore(s => s.S)
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     {/* Sticky, so the summary can be left from the top however far it has been scrolled. */}
@@ -3694,6 +3731,7 @@ function FinishSummary({ w, prs, e1prs = [], additions = [], close }) {
     <div style={{ height: 14 }} />
     <LastAndNext st={st} w={w} />
     <CardioDone st={st} w={w} />
+    <KeepAsTemplate templates={templates} />
     <KeepInRoutine additions={additions} />
     {/* The moment for a progress photo or the clip of a set: the workout is already saved, so
         what is added here goes straight onto its record. */}
@@ -3762,7 +3800,9 @@ function doFinishWorkout() {
   })
   w.vol = workoutVolume(w)
   // Read before the session is gone: the summary offers these to their routines (#592).
-  const additions = past ? [] : routineAdditions(A, st.routines)
+  // The template offer covers what was added, so a routine it names is not asked about twice.
+  const templates = past ? [] : routineTemplates(A, st.routines)
+  const additions = past ? [] : routineAdditions(A, st.routines).filter(a => !templates.some(o => o.routineId === a.routineId))
   let shown = w
   update(s => {
     if (past) {
@@ -3793,5 +3833,5 @@ function doFinishWorkout() {
   // into s.active, which is gone. What it held is not logged, like any set left unchecked.
   useUI.getState().stopWork()
   beep(snd(), 880, 0.15); beep(snd(), 1100, 0.15, 0.18); beep(snd(), 1320, 0.3, 0.36)
-  ui().openSheet(close => <FinishSummary w={shown} prs={prs} e1prs={e1prs} additions={additions} close={close} />, { kind: 'center', locked: true, wide: true })
+  ui().openSheet(close => <FinishSummary w={shown} prs={prs} e1prs={e1prs} additions={additions} templates={templates} close={close} />, { kind: 'center', locked: true, wide: true })
 }

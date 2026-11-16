@@ -2592,4 +2592,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': 'Только для этого телефона. Некоторым рабочим столам нужна минутка, чтобы заметить.',
   'The icon could not be changed.': 'Не удалось сменить значок.',
   'Try the Halloween app icon': 'Попробуй хеллоуинский значок приложения',
+  'Routine template': 'Шаблон программы',
+  'This workout is not the same as “{0}”.': 'Эта тренировка отличается от «{0}».',
+  'Added: {0}.': 'Добавлено: {0}.',
+  'Left out: {0}.': 'Пропущено: {0}.',
+  '“{0}” now follows this workout': '«{0}» теперь повторяет эту тренировку',
+  '“{0}” stays as it was': '«{0}» остаётся как было',
+  'Use this workout as the template': 'Сделать эту тренировку шаблоном',
+  'Keep the current routine': 'Оставить текущую программу',
 }

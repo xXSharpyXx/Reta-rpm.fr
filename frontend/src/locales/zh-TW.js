@@ -2581,4 +2581,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': '只限這支手機。有些主畫面要過一下才會跟上。',
   'The icon could not be changed.': '無法更換圖示。',
   'Try the Halloween app icon': '試試萬聖節 App 圖示',
+  'Routine template': '訓練範本',
+  'This workout is not the same as “{0}”.': '這次訓練和「{0}」不一樣。',
+  'Added: {0}.': '新增：{0}。',
+  'Left out: {0}.': '未做：{0}。',
+  '“{0}” now follows this workout': '「{0}」現在依照這次訓練',
+  '“{0}” stays as it was': '「{0}」維持不變',
+  'Use this workout as the template': '把這次訓練設為範本',
+  'Keep the current routine': '保留目前的訓練計畫',
 }

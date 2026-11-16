@@ -2588,4 +2588,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': 'सिर्फ़ इस फ़ोन के लिए। कुछ होम स्क्रीन को समझने में थोड़ा समय लगता है।',
   'The icon could not be changed.': 'आइकन बदला नहीं जा सका।',
   'Try the Halloween app icon': 'हैलोवीन ऐप आइकन आज़माएँ',
+  'Routine template': 'रूटीन टेम्पलेट',
+  'This workout is not the same as “{0}”.': 'यह वर्कआउट “{0}” जैसा नहीं है।',
+  'Added: {0}.': 'जोड़ा गया: {0}।',
+  'Left out: {0}.': 'छोड़ा गया: {0}।',
+  '“{0}” now follows this workout': '“{0}” अब इस वर्कआउट जैसा है',
+  '“{0}” stays as it was': '“{0}” पहले जैसा ही रहेगा',
+  'Use this workout as the template': 'इस वर्कआउट को टेम्पलेट बनाएं',
+  'Keep the current routine': 'मौजूदा रूटीन रखें',
 }

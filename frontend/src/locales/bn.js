@@ -2667,4 +2667,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': 'শুধু এই ফোনের জন্য। কিছু হোম স্ক্রিন বুঝতে একটু সময় নেয়।',
   'The icon could not be changed.': 'আইকন বদলানো গেল না।',
   'Try the Halloween app icon': 'হ্যালোইন অ্যাপ আইকন চেষ্টা করুন',
+  'Routine template': 'রুটিনের টেমপ্লেট',
+  'This workout is not the same as “{0}”.': 'এই ওয়ার্কআউট “{0}”-এর মতো নয়।',
+  'Added: {0}.': 'যোগ হয়েছে: {0}।',
+  'Left out: {0}.': 'বাদ পড়েছে: {0}।',
+  '“{0}” now follows this workout': '“{0}” এখন এই ওয়ার্কআউট অনুসরণ করে',
+  '“{0}” stays as it was': '“{0}” আগের মতোই থাকছে',
+  'Use this workout as the template': 'এই ওয়ার্কআউটকে টেমপ্লেট করুন',
+  'Keep the current routine': 'বর্তমান রুটিন রাখুন',
 }

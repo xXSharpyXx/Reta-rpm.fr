@@ -2588,4 +2588,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': '이 휴대폰에만 적용돼요. 홈 화면에 따라 바뀌는 데 잠깐 걸릴 수 있어요.',
   'The icon could not be changed.': '아이콘을 바꾸지 못했어요.',
   'Try the Halloween app icon': '핼러윈 앱 아이콘 써 보기',
+  'Routine template': '루틴 템플릿',
+  'This workout is not the same as “{0}”.': '이 운동은 “{0}”와 같지 않아요.',
+  'Added: {0}.': '추가됨: {0}.',
+  'Left out: {0}.': '빠짐: {0}.',
+  '“{0}” now follows this workout': '“{0}”이(가) 이제 이 운동을 따라요',
+  '“{0}” stays as it was': '“{0}”은(는) 그대로예요',
+  'Use this workout as the template': '이 운동을 템플릿으로 사용',
+  'Keep the current routine': '지금 루틴 유지',
 }

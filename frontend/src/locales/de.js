@@ -2608,4 +2608,12 @@ export default {
   'Just for this phone. Some home screens take a moment to catch up.': 'Nur für dieses Handy. Manche Startbildschirme brauchen einen Moment, bis sie mitkommen.',
   'The icon could not be changed.': 'Das Icon ließ sich nicht ändern.',
   'Try the Halloween app icon': 'Probier das Halloween-App-Icon',
+  'Routine template': 'Routine-Vorlage',
+  'This workout is not the same as “{0}”.': 'Dieses Training ist nicht dasselbe wie „{0}“.',
+  'Added: {0}.': 'Hinzugefügt: {0}.',
+  'Left out: {0}.': 'Weggelassen: {0}.',
+  '“{0}” now follows this workout': '„{0}“ folgt jetzt diesem Training',
+  '“{0}” stays as it was': '„{0}“ bleibt, wie es war',
+  'Use this workout as the template': 'Dieses Training als Vorlage nehmen',
+  'Keep the current routine': 'Aktuelle Routine behalten',
 }
