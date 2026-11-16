@@ -2666,4 +2666,8 @@ export default {
   'both dumbbells': 'oba hantle',
   '{0} PR': '{0} PR',
   '{0} PRs': '{0} PR',
+  'See more': 'Pokaż więcej',
+  'See less': 'Pokaż mniej',
+  'No workout this day': 'Brak treningu tego dnia',
+  'Plan this day': 'Zaplanuj ten dzień',
 }

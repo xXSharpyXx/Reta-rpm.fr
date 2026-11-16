@@ -2666,4 +2666,8 @@ export default {
   'both dumbbells': '两个哑铃',
   '{0} PR': '{0} 个 PR',
   '{0} PRs': '{0} 个 PR',
+  'See more': '查看更多',
+  'See less': '收起',
+  'No workout this day': '这天没有训练',
+  'Plan this day': '安排这一天',
 }

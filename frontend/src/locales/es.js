@@ -2666,4 +2666,8 @@ export default {
   'both dumbbells': 'las dos mancuernas',
   '{0} PR': '{0} PR',
   '{0} PRs': '{0} PR',
+  'See more': 'Ver más',
+  'See less': 'Ver menos',
+  'No workout this day': 'Ningún entrenamiento este día',
+  'Plan this day': 'Planificar este día',
 }

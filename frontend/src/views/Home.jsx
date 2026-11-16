@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { effectiveRoutines, effectiveRoutineIds, nextTrainingDay, streakWeeks, lastBW, setsDoneActive } from '../lib/history.js'
-import { fmtNum, fmtDate, todayISO, isoOf, weekStartOf, weekDayOffset, DAYS, DAYN } from '../lib/format.js'
+import { effectiveRoutines, effectiveRoutineIds, nextTrainingDay, streakWeeks, lastBW, setsDoneActive, workoutDay } from '../lib/history.js'
+import { fmtNum, fmtDate, todayISO, isoOf, weekStartOf, weekDayOffset, durPart, DAYS, DAYN } from '../lib/format.js'
 import { t, tn, dateLocale } from '../lib/i18n.js'
-import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, starterPlanSheet, bwDeltaColor, weighInsSheet } from '../sheets.jsx'
+import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, starterPlanSheet, bwDeltaColor, weighInsSheet, workoutDetailSheet, exerciseHistorySheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
 import QueueRow from '../components/QueueRow.jsx'
@@ -20,6 +20,7 @@ import WeightRate from '../components/WeightRate.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 import { APP_NAME } from '../lib/brand.js'
 import { isSimple } from '../lib/simple.js'
+import { WorkoutExercises } from '../components/WorkoutSummary.jsx'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
@@ -29,15 +30,12 @@ export default function Home() {
   // The banner switched off and the sync stuck: a dot on the gear (Settings → Show connection status).
   const trouble = useConnectionTrouble()
   const [weekOffset, setWeekOffset] = useState(0)
+  // The day the panel under the week shows: today until another day is tapped.
+  const [selDay, setSelDay] = useState(todayISO)
 
   const today = new Date()
-  // A weekday can hold several routines. `todayRoutines` is the whole day; `routine` is the
-  // first, kept for the one-routine glyph. The derived session name joins them (§9).
+  // A weekday can hold several routines: today's, for the next-session line on a rest day.
   const todayRoutines = effectiveRoutines(S, todayISO())
-  const routine = todayRoutines[0] || null
-  const todayName = todayRoutines.map(r => r.name).join(' + ')
-  // A fulfilled pin (a coach session pinned to today and since done) reads as no override.
-  const todayOvr = S.dayPlan[todayISO()] !== undefined && pinState(S, S.dayPlan[todayISO()]) !== 'done'
   // An open editor on a saved workout (lib/session-edit.js) holds S.active too, but it is not a
   // session in progress: the row takes you back to it as an edit, the way the tab bar does.
   const editingSaved = !!S.active?.editingWorkoutId
@@ -50,17 +48,7 @@ export default function Home() {
   // is the setting.
   const wkStart = new Date(today)
   wkStart.setDate(today.getDate() - weekDayOffset(today.getDay(), ws) + weekOffset * 7)
-  const doneDays = new Set(S.workouts.map(w => w.d))
-  // The last session logged for today, if any — what the row below reports instead of asking
-  // you to start the one you already did. Last wins, so a second session names itself. Only once
-  // today's plan is covered, though: a freestyle session on a planned day, or the rotation's
-  // first session done when its next one is today's too, leaves the row offering what is still
-  // to do, as Start and the progress row already do. A queue session is never "covered" by an
-  // earlier workout: the queue only names one it does not count as done yet.
-  const loggedToday = S.workouts.filter(w => w.d === todayISO())
-  const queueIds = queueOf(S)?.ids || []
-  const coveredToday = id => !queueIds.includes(id) && loggedToday.some(w => (Array.isArray(w.routineIds) ? w.routineIds : [w.routineId]).includes(id))
-  const doneToday = (todayRoutines.every(r => coveredToday(r.id)) && loggedToday.at(-1)) || null
+  const doneDays = new Set(S.workouts.map(w => workoutDay(w) || w.d))
   const strip = []
   for (let i = 0; i < 7; i++) {
     const d = new Date(wkStart); d.setDate(wkStart.getDate() + i)
@@ -68,7 +56,7 @@ export default function Home() {
     const eff = effectiveRoutineIds(S, iso).length > 0, ovr = S.dayPlan[iso] !== undefined, done = doneDays.has(iso)
     // A day off with a note (#261) reads as excused, not as a plan that went by.
     const dot = done ? ' done' : dayNoteOf(S, iso) ? ' noted' : ovr && eff ? ' ovr' : eff ? ' plan' : ''
-    strip.push(<div key={i} className={'wday' + (iso === todayISO() ? ' today' : '')} {...tappable(() => dayOverrideSheet(iso))}>
+    strip.push(<div key={i} className={'wday' + (iso === todayISO() ? ' today' : '') + (iso === selDay ? ' sel' : '')} aria-pressed={iso === selDay} {...tappable(() => setSelDay(iso))}>
       <div className="lbl">{t(DAYS[d.getDay()])}</div><div className="num">{d.getDate()}</div><div className={'dot' + dot} /></div>)
   }
   const wkEnd = new Date(wkStart); wkEnd.setDate(wkStart.getDate() + 6)
@@ -84,8 +72,6 @@ export default function Home() {
   const { done: doneThisWeek, planned: plannedPerWeek } = weekTally(S, todayISO())
   const bwPoints = S.bodyweight.slice(-30).map(b => ({ t: weighInAt(b), y: b.w, d: b.d }))
 
-  // today's session shown right under the week strip
-  const onToday = () => { if (S.active) nav('/workout'); else if (todayRoutines.length) startFlow(effectiveRoutineIds(S, todayISO())); else dayOverrideSheet(todayISO()) }
   // A chip on the coach week's progress row starts that one routine, in any order. A session
   // already in progress wins, as on the today row — starting another would overwrite it.
   const onQueueStart = id => { if (S.active) nav('/workout'); else startFlow([id]) }
@@ -109,41 +95,20 @@ export default function Home() {
         </div>
         <div className="week">{strip}</div>
       </>}
-      {/* Once today's session is logged the row stops asking for it. The week strip already
-          knew (its dot goes 'done'); this row did not, so a finished day kept showing the
-          routine name behind a green Start tag and read as still outstanding (issue #4).
-          An in-progress session still wins — that one is happening right now. Tapping the
-          row keeps working, so a second session in one day is a tap away, just not urged. */}
-      <div className="today-row" {...tappable(onToday)}>
+      {/* A session in progress (or a saved one being edited) stays one tap away, above the day. */}
+      {S.active && <div className="today-row" {...tappable(() => nav('/workout'))}>
         <div className="row" style={{ gap: 9, minWidth: 0 }}>
-          <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : doneToday ? 'var(--surface-3)' : routine ? 'var(--acc)' : 'var(--surface-3)' }}>
-            <Icon name={S.active ? (editingSaved ? 'pencil' : 'play') : doneToday ? 'checkCircle' : routine ? glyphOf(routine.emoji) : 'moon'}
-              style={doneToday && !S.active ? { color: 'var(--green)' } : undefined} />
-          </span>
+          <span className="lrow-i" style={{ background: 'var(--orange)' }}><Icon name={editingSaved ? 'pencil' : 'play'} /></span>
           <div style={{ minWidth: 0 }}>
             <div className="lbl2">{t('Today')}</div>
-            <div className="ttl">{S.active ? (editingSaved ? S.active.name : t('{0} (in progress)', S.active.name))
-              : doneToday ? (doneToday.name ? t('{0} (done)', doneToday.name) : t('Workout done'))
-              : routine ? todayName : t('Rest day')}{todayOvr && routine && !doneToday ? ' · ' + t('rescheduled') : ''}</div>
-            {next && !doneToday && <div className="ss">{t('Next session: {0}, {1}', t(DAYN[next.weekday]), next.routine.name)}</div>}
+            <div className="ttl">{editingSaved ? S.active.name : t('{0} (in progress)', S.active.name)}</div>
           </div>
         </div>
-        {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{editingSaved ? t('Edit') : t('Resume')}</span>
-          : doneToday ? <span className="tag" style={{ color: 'var(--green)', background: 'color-mix(in srgb,var(--green) 16%,transparent)' }}>{t('Done')}</span>
-          : routine ? <span className="row" style={{ gap: 8 }}><MiniBodyMap routines={todayRoutines} body={S.body} /><span className="tag acc">{t('Start')}</span></span>
-          : <Icon name="plus" className="chev" />}
-      </div>
-      {/* The row above starts today's plan in one tap, and so does the Start button in the tab
-          bar — which is the whole problem when you want something else. Both jump straight into
-          the planned session whenever there is one, so the Start screen (a freestyle session,
-          and your other routines) is only reachable on a day with nothing planned. The one other
-          way in, "Choose a different workout" on the weigh-in sheet, does not exist when the
-          weigh-in is switched off. This is that door, and it starts nothing on its own. */}
-      {!S.active && <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
-        <Button size="sm" variant="ghost" className="dim" icon="swap" onClick={() => nav('/workout')}>
-          {t('Choose a different workout')}
-        </Button>
+        <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{editingSaved ? t('Edit') : t('Resume')}</span>
       </div>}
+      {/* The day picked on the week (today by default): what was trained on it, each session
+          with its name, date and duration, and "See more" opening its exercises in place. */}
+      <DayWorkouts S={S} iso={selDay} next={selDay === todayISO() && !S.active ? next : null} />
       <SeasonDeco spot="home-hero" />
     </div>
 
@@ -227,5 +192,36 @@ export default function Home() {
         <Icon name="calendar" className="chev" style={{ fontSize: 20 }} />
       </div>
     </div>
+  </div>
+}
+
+/* The workouts of one day, under the week strip. Each one: its name in bold, the date and the
+   duration in smaller type, and "See more" opening its exercises right here (the same read-back
+   as everywhere else, components/WorkoutSummary.jsx). Tapping the name opens the full sheet, where
+   the workout can be edited or given photos and a note. */
+function DayWorkouts({ S, iso, next }) {
+  const ws = S.workouts.filter(w => (workoutDay(w) || w.d) === iso)
+  const [open, setOpen] = useState({})
+  const label = iso === todayISO() ? t('Today') : fmtDate(iso, true)
+  return <div className="dayw" data-day={iso}>
+    <div className="dayw-lbl">{label}</div>
+    {ws.length ? ws.map((w, i) => {
+      const key = w.id || i
+      const isOpen = !!open[key]
+      return <div key={key} className="dayw-item">
+        <div className="dayw-head" {...tappable(() => workoutDetailSheet(w))}>
+          <div className="dayw-name">{w.name || t('Workout')}</div>
+          <div className="dayw-meta">{[fmtDate(w.d, true), ...durPart((w.end || w.start) - w.start)].join(' · ')}</div>
+        </div>
+        <button type="button" className="dayw-more" aria-expanded={isOpen} onClick={() => setOpen(o => ({ ...o, [key]: !o[key] }))}>
+          {t(isOpen ? 'See less' : 'See more')}<Icon name={isOpen ? 'chevronUp' : 'chevronDown'} />
+        </button>
+        {isOpen && <WorkoutExercises w={w} onExercise={exerciseHistorySheet} />}
+      </div>
+    }) : <div className="dayw-empty">
+      <div className="muted">{t('No workout this day')}</div>
+      {next && <div className="small dim">{t('Next session: {0}, {1}', t(DAYN[next.weekday]), next.routine.name)}</div>}
+      <button type="button" className="plan-textbtn dayw-plan" onClick={() => dayOverrideSheet(iso)}>{t('Plan this day')}</button>
+    </div>}
   </div>
 }

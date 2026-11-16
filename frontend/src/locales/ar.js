@@ -2721,4 +2721,8 @@ export default {
   'both dumbbells': 'الدمبلان معًا',
   '{0} PR': '{0} رقم قياسي',
   '{0} PRs': '{0} أرقام قياسية',
+  'See more': 'عرض المزيد',
+  'See less': 'عرض أقل',
+  'No workout this day': 'لا يوجد تمرين في هذا اليوم',
+  'Plan this day': 'خطط لهذا اليوم',
 }

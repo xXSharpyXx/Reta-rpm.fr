@@ -2686,4 +2686,8 @@ export default {
   'both dumbbells': 'beide Kurzhanteln',
   '{0} PR': '{0} PR',
   '{0} PRs': '{0} PRs',
+  'See more': 'Mehr anzeigen',
+  'See less': 'Weniger anzeigen',
+  'No workout this day': 'Kein Training an diesem Tag',
+  'Plan this day': 'Diesen Tag planen',
 }

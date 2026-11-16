@@ -2666,4 +2666,8 @@ export default {
   'both dumbbells': 'दोनों डम्बल',
   '{0} PR': '{0} PR',
   '{0} PRs': '{0} PR',
+  'See more': 'और देखें',
+  'See less': 'कम देखें',
+  'No workout this day': 'इस दिन कोई वर्कआउट नहीं',
+  'Plan this day': 'इस दिन की योजना बनाएं',
 }

@@ -2663,4 +2663,8 @@ export default {
   'both dumbbells': 'обидві гантелі',
   '{0} PR': '{0} PR',
   '{0} PRs': '{0} PR',
+  'See more': 'Детальніше',
+  'See less': 'Згорнути',
+  'No workout this day': 'Цього дня тренувань немає',
+  'Plan this day': 'Запланувати день',
 }

@@ -2659,4 +2659,8 @@ export default {
   'both dumbbells': '兩個啞鈴',
   '{0} PR': '{0} 個 PR',
   '{0} PRs': '{0} 個 PR',
+  'See more': '查看更多',
+  'See less': '收起',
+  'No workout this day': '這天沒有訓練',
+  'Plan this day': '安排這一天',
 }

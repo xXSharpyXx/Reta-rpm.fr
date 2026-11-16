@@ -2666,4 +2666,8 @@ export default {
   'both dumbbells': 'iki dambıl',
   '{0} PR': '{0} PR',
   '{0} PRs': '{0} PR',
+  'See more': 'Daha fazla',
+  'See less': 'Daha az',
+  'No workout this day': 'Bu gün antrenman yok',
+  'Plan this day': 'Bu günü planla',
 }

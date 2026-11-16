@@ -2713,4 +2713,8 @@ export default {
   'both dumbbells': 'båda hantlarna',
   '{0} PR': '{0} PR',
   '{0} PRs': '{0} PR',
+  'See more': 'Visa mer',
+  'See less': 'Visa mindre',
+  'No workout this day': 'Inget pass den här dagen',
+  'Plan this day': 'Planera dagen',
 }

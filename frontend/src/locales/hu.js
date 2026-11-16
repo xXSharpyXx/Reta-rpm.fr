@@ -2669,4 +2669,8 @@ export default {
   'both dumbbells': 'a két kézisúlyzó',
   '{0} PR': '{0} PR',
   '{0} PRs': '{0} PR',
+  'See more': 'Több',
+  'See less': 'Kevesebb',
+  'No workout this day': 'Ezen a napon nem volt edzés',
+  'Plan this day': 'Nap tervezése',
 }

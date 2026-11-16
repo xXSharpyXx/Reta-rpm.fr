@@ -2666,4 +2666,8 @@ export default {
   'both dumbbells': '덤벨 두 개 합계',
   '{0} PR': 'PR {0}개',
   '{0} PRs': 'PR {0}개',
+  'See more': '더 보기',
+  'See less': '접기',
+  'No workout this day': '이날은 운동 기록이 없어요',
+  'Plan this day': '이날 계획하기',
 }

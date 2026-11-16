@@ -2666,4 +2666,8 @@ export default {
   'both dumbbells': 'entrambi i manubri',
   '{0} PR': '{0} PR',
   '{0} PRs': '{0} PR',
+  'See more': 'Vedi altro',
+  'See less': 'Vedi meno',
+  'No workout this day': 'Nessun allenamento in questo giorno',
+  'Plan this day': 'Pianifica questo giorno',
 }

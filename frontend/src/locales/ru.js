@@ -2670,4 +2670,8 @@ export default {
   'both dumbbells': 'обе гантели',
   '{0} PR': '{0} PR',
   '{0} PRs': '{0} PR',
+  'See more': 'Подробнее',
+  'See less': 'Свернуть',
+  'No workout this day': 'В этот день тренировок нет',
+  'Plan this day': 'Запланировать день',
 }

@@ -2666,4 +2666,8 @@ export default {
   'both dumbbells': 'os dois halteres',
   '{0} PR': '{0} PR',
   '{0} PRs': '{0} PR',
+  'See more': 'Ver mais',
+  'See less': 'Ver menos',
+  'No workout this day': 'Nenhum treino neste dia',
+  'Plan this day': 'Planear este dia',
 }

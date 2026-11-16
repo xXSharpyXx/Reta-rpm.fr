@@ -1642,6 +1642,7 @@ export const PT_BR_OVERRIDES = {
   'App icon': 'Ícone do app',
   'Just for this phone. Some home screens take a moment to catch up.': 'Só para este celular. Algumas telas iniciais demoram um pouco para perceber.',
   'Try the Halloween app icon': 'Experimente o ícone de Halloween do app',
+  'Plan this day': 'Planejar este dia',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }
