@@ -2652,4 +2652,11 @@ export default {
   'Warm-up set': 'Warm-up set',
   'last time {0}': 'last time {0}',
   'never done yet': 'never done yet',
+  'Set': '組',
+  'Speed': '速度',
+  'Failure': '力竭',
+  'per dumbbell': '每個啞鈴',
+  'both dumbbells': '兩個啞鈴',
+  '{0} PR': '{0} 個 PR',
+  '{0} PRs': '{0} 個 PR',
 }

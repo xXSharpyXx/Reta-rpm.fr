@@ -2679,4 +2679,11 @@ export default {
   'Warm-up set': 'Warm-up set',
   'last time {0}': 'last time {0}',
   'never done yet': 'never done yet',
+  'Set': 'Satz',
+  'Speed': 'Tempo',
+  'Failure': 'Muskelversagen',
+  'per dumbbell': 'pro Kurzhantel',
+  'both dumbbells': 'beide Kurzhanteln',
+  '{0} PR': '{0} PR',
+  '{0} PRs': '{0} PRs',
 }

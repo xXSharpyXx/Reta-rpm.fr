@@ -161,3 +161,40 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -.02em }
 .settype-g.fail{color:var(--red)}
 .settype-g.del{color:var(--red);font-size:20px}
 .settype .settype-item.on{background:var(--surface-2);background:color-mix(in srgb,var(--acc) 10%,var(--surface))}
+/* ------------------------------------------------------------- Workout read-back -- */
+/* One finished workout (components/WorkoutSummary.jsx): the name large, a meta line, then a card
+   per exercise with its sets in a small aligned table. Smaller type for the sets than the name. */
+.wsum-title{margin:0 0 4px;font-size:22px;line-height:1.2;overflow-wrap:anywhere}
+.wsum-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 14px;font-size:13px;color:var(--label-2)}
+.wsum-list{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.wsum-group{margin:6px 0 2px;padding-bottom:6px;border-bottom:1px solid var(--sep)}
+.wsum-ex{background:var(--surface-2);border-radius:var(--r);padding:12px;min-width:0}
+.wsum-ex.tappable{cursor:pointer}
+.wsum-ex.tappable:active{background:var(--surface-3)}
+.wsum-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.wsum-head .thumb{width:44px;height:44px}
+.wsum-head .grow{flex:1;min-width:0}
+.wsum-head .chev{flex:none}
+.wsum-name{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;font-size:16px;font-weight:600;line-height:1.25}
+.wsum-name>span:first-child{overflow-wrap:anywhere}
+.wsum-bell{flex:none;font-size:12px;font-weight:500;color:var(--label-3)}
+.wsum-machine{display:flex;align-items:center;gap:4px;margin-top:2px;font-size:12px;color:var(--label-2)}
+.wsum-machine .icn{font-size:11px}
+.wsum-sets{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.wsum-sets th{padding:0 0 4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--label-3);text-align:start}
+.wsum-sets td{padding:5px 0;border-top:1px solid var(--sep);vertical-align:top}
+.wsum-sets th:first-child,.wsum-sets td.n{width:3.2em}
+.wsum-sets td.n{color:var(--label-2);font-weight:600}
+.wsum-sets td.w{width:42%;padding-inline-end:8px}
+.wsum-rc{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.wsum-sets tr.warm td{color:var(--label-3)}
+.wsum-warm{font-size:11px;font-weight:600}
+.wsum-extra{font-size:12px;color:var(--label-2);margin-top:2px}
+.wsum-eff{font-size:11px;color:var(--label-3)}
+.wsum-badge{display:inline-flex;align-items:center;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:600}
+.wsum-badge.fail{background:rgba(224,82,78,.16);color:var(--brand-coral)}
+.wsum-sets .pr{padding:1px 7px;font-size:11px}
+.wsum-sets .pr .icn{font-size:11px}
+.wsum-note{margin-top:8px}
+.wsum-ss{display:flex;flex-direction:column;gap:8px;margin-bottom:0}
+.wsum-ss .ss-label{margin:0}

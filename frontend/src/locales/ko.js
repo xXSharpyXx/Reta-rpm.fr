@@ -2659,4 +2659,11 @@ export default {
   'Warm-up set': 'Warm-up set',
   'last time {0}': 'last time {0}',
   'never done yet': 'never done yet',
+  'Set': '세트',
+  'Speed': '속도',
+  'Failure': '실패',
+  'per dumbbell': '덤벨 하나당',
+  'both dumbbells': '덤벨 두 개 합계',
+  '{0} PR': 'PR {0}개',
+  '{0} PRs': 'PR {0}개',
 }

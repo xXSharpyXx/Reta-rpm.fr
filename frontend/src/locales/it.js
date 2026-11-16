@@ -2659,4 +2659,11 @@ export default {
   'Warm-up set': 'Warm-up set',
   'last time {0}': 'last time {0}',
   'never done yet': 'never done yet',
+  'Set': 'Serie',
+  'Speed': 'Velocità',
+  'Failure': 'Cedimento',
+  'per dumbbell': 'per manubrio',
+  'both dumbbells': 'entrambi i manubri',
+  '{0} PR': '{0} PR',
+  '{0} PRs': '{0} PR',
 }

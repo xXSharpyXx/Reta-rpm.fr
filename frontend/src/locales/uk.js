@@ -2656,4 +2656,11 @@ export default {
   'Warm-up set': 'Warm-up set',
   'last time {0}': 'last time {0}',
   'never done yet': 'never done yet',
+  'Set': 'Підхід',
+  'Speed': 'Швидкість',
+  'Failure': 'Відмова',
+  'per dumbbell': 'на гантель',
+  'both dumbbells': 'обидві гантелі',
+  '{0} PR': '{0} PR',
+  '{0} PRs': '{0} PR',
 }

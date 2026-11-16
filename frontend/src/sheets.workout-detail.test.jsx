@@ -52,8 +52,9 @@ describe('workout detail', () => {
       { id: lifts[0], target: { mode: 'reps' }, sets: [done(100, 8, { type: 'dropset', drops: [{ w: 80, r: 6 }, { w: 60, r: 5 }] })] },
       { id: lifts[1], target: { mode: 'reps' }, sets: [done(60, 16, { type: 'restpause', clusters: [{ r: 4, restSec: 15 }, { r: 2, restSec: 15 }] })] },
     ]))
-    const rows = [...mountTopSheet().querySelectorAll('.wd-ex .ss')].map(el => el.textContent)
-    expect(rows).toEqual(['100×8 ↘ 80×6 ↘ 60×5', '60×10+4+2'])
+    // One table row per set (components/WorkoutSummary.jsx): Set | Weight | Reps, drops under the weight.
+    const rows = [...mountTopSheet().querySelectorAll('.wsum-sets tbody tr')].map(tr => [...tr.children].map(td => td.textContent))
+    expect(rows).toEqual([['1', '100 kg↘ 80 kg × 6   ↘ 60 kg × 5', '8'], ['1', '60 kg', '10+4+2']])
   })
 
   it('keeps a superset together under one label, in a flat and in a combined workout', () => {
@@ -67,15 +68,15 @@ describe('workout detail', () => {
     let groups = host.querySelectorAll('.wd-ss')
     expect(groups).toHaveLength(1)
     expect(groups[0].querySelector('.ss-label').textContent).toBe('Superset')
-    expect(groups[0].querySelectorAll('.wd-ex')).toHaveLength(2)
-    expect(host.querySelectorAll('.wd-ex')).toHaveLength(3)
+    expect(groups[0].querySelectorAll('.wsum-ex')).toHaveLength(2)
+    expect(host.querySelectorAll('.wsum-ex')).toHaveLength(3)
 
     useUI.setState({ sheets: [] })
     const combined = entries.map((e, i) => ({ ...e, rid: i < 2 ? 'A' : 'B' }))
     workoutDetailSheet(workout(combined, { routineIds: ['A', 'B'] }))
     host = mountTopSheet()
     expect(host.textContent).toContain('Freestyle')           // routines since deleted
-    expect(host.querySelectorAll('.wd-ss .wd-ex')).toHaveLength(2)
+    expect(host.querySelectorAll('.wd-ss .wsum-ex')).toHaveLength(2)
   })
 
   it('shows an unpaired exercise without a superset label', () => {
@@ -90,7 +91,7 @@ describe('workout detail', () => {
     const w = workout([{ id: lifts[0], target: { mode: 'reps' }, sets: [done(60, 5)] }])
     useStore.setState(s => ({ S: { ...s.S, workouts: [w] } }))
     workoutDetailSheet(w)
-    const row = mountTopSheet().querySelector('.wd-ex')
+    const row = mountTopSheet().querySelector('.wsum-ex')
     expect(row.getAttribute('role')).toBe('button')
     act(() => { row.click() })
     expect(useUI.getState().sheets).toHaveLength(2)
@@ -135,7 +136,7 @@ describe('workout detail', () => {
     workoutDetailSheet(w)
     const host = mountTopSheet()
     expect(host.querySelector('.wd-ss')).toBeNull()
-    expect(host.querySelectorAll('.wd-ex')).toHaveLength(3)
+    expect(host.querySelectorAll('.wsum-ex')).toHaveLength(3)
     await act(async () => { button(host, 'Copy as text').click() })
     expect(writeText.mock.calls[0][0]).not.toContain('Superset')
   })

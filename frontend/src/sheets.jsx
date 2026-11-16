@@ -13,6 +13,7 @@ import { t, tn, dateLocale, instrFor, instrTranslated, descFor, exerciseNameFor,
 import { nav, closeThenNav, navToWorkout } from './lib/nav.js'
 import { buildStarterPlan, starterPlanDays, starterPlanOptions } from './lib/starter.js'
 import Media, { Thumb } from './components/Media.jsx'
+import WorkoutSummary from './components/WorkoutSummary.jsx'
 import CustomMediaField from './components/CustomMediaField.jsx'
 import WorkoutMediaSection, { workoutMediaCount } from './components/WorkoutMedia.jsx'
 import { mediaOf, normalizeMediaRef, cleanUrl, workoutMediaOf } from './lib/media-refs.js'
@@ -2811,30 +2812,6 @@ function WorkoutDetail({ w, close }) {
     })
   }, [])
   const nameOf = e => (EXIDX[e.id] ? exerciseNameFor(EXIDX[e.id]) : (e.n || e.id))
-  // Tapping an exercise opens its history (Discord 'Improvement ideas'): from one session to the
-  // curve it sits on, which is the question a past workout raises most often.
-  const entryRow = (e, i) => {
-    const ex = EXIDX[e.id]
-    return <div key={i} className="row wd-ex" style={{ alignItems: 'flex-start' }} {...tappable(() => exerciseHistorySheet(e.id))}>
-      {ex && <Thumb ex={ex} />}
-      <div className="grow"><div className={`tt ${exerciseNameClass(ex)}`} style={{ fontWeight: 600 }}>{nameOf(e)} {w.prs && w.prs.includes(e.id) && <span className="pr"><Icon name="trophy" />PR</span>}</div>
-        <div className="ss">{e.sets.filter(hasCompletedWork).map(s => setLabel(e.id, s, e.target, speedUnitOf(st)) + hrLabel(s)).join('  ·  ') || t('no sets')}</div>
-        {e.note && <div className="small dim" style={{ marginTop: 3 }}>
-          {e.notePin && <Icon name="pin" style={{ fontSize: 12, marginInlineEnd: 4, verticalAlign: '-1px', color: 'var(--yellow)' }} />}{e.note}
-        </div>}</div>
-      <Icon name="chevronRight" className="chev" style={{ alignSelf: 'center' }} />
-    </div>
-  }
-  // Exercises done as a superset stay together under a "Superset" label and one bar, the way the
-  // routine editor shows them (Discord: "supersets aren't shown at all"). Adjacent entries with
-  // the same tag, as in the workout itself; a workout finished before the tag was kept has none.
-  const entryRows = units => units.map(unit => {
-    if (unit.length < 2) return entryRow(w.entries[unit[0]], unit[0])
-    return <div key={'ss' + unit[0]} className="wd-ss">
-      <div className="ss-label"><Icon name="link" />{t('Superset')}</div>
-      {unit.map(i => entryRow(w.entries[i], i))}
-    </div>
-  })
   // Copied with the note as it stands in the box, which may not be saved yet.
   const copyAsText = async () => {
     const rec = { ...(st.workouts.find(x => sameWorkout(x, w)) || w), note: note.trim() }
@@ -2857,30 +2834,10 @@ function WorkoutDetail({ w, close }) {
     const rec = st.workouts.find(x => sameWorkout(x, w)) || w
     ui().openSheet(c2 => <ShareWorkoutImage w={rec} nameOf={nameOf} close={c2} />)
   }
-  // A combined session's entries carry a `rid`; group them into per-routine sections in merge
-  // order, with each section's supersets paired inside it (sessionSections, which "Copy as text"
-  // reads the workout through too). A legacy single-routine workout (one routineIds, or no rid
-  // anywhere) renders flat.
-  const groups = sessionSections(w.entries)
-  const grouped = groups.length > 1 || (groups[0] && groups[0].rid && (w.routineIds || []).length > 1)
+  // The name, the meta line and the exercises: the read-back every screen shares
+  // (components/WorkoutSummary.jsx). Tapping an exercise opens its history.
   return <>
-    <h3>{w.name}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{[fmtDate(w.d, true), ...durPart(w.end - w.start), fmtVol(sessionVolume(w, st), st.unit), ...(w.bw ? [fmtNum(w.bw) + ' ' + st.unit] : [])].join(' · ')}</div>
-    {grouped ? groups.map(g => {
-      const r = g.rid ? st.routines.find(x => x.id === g.rid) : null
-      const items = g.items.map(i => w.entries[i])
-      const setN = items.reduce((n, e) => n + e.sets.filter(s => s.done && !isWarmupRow(s)).length, 0)
-      const vol = workoutVolume({ entries: items }, { warmups: countsWarmups(st) })
-      return <div key={g.rid || '__none'}>
-        <div className="row between" style={{ margin: '2px 0 8px', paddingBottom: 6, borderBottom: '1px solid var(--sep)' }}>
-          <div className="row" style={{ gap: 7, fontWeight: 600 }}>
-            {r && <Icon name={glyphOf(r.emoji)} />}{r ? r.name : t('Freestyle')}
-          </div>
-          <div className="small dim">{t('{0} sets', setN)} · {fmtVol(vol, st.unit)}</div>
-        </div>
-        {entryRows(g.units)}
-      </div>
-    }) : entryRows(groups[0]?.units || [])}
+    <WorkoutSummary w={w} withBw onExercise={id => exerciseHistorySheet(id)} />
     {/* Progress photos and form-check videos: added and removed right here, on the saved record. */}
     <WorkoutMediaSection w={w} />
     <div className="small muted" style={{ margin: '4px 0 6px' }}>{t('Session note')}</div>

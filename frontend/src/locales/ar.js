@@ -2714,4 +2714,11 @@ export default {
   'Warm-up set': 'Warm-up set',
   'last time {0}': 'last time {0}',
   'never done yet': 'never done yet',
+  'Set': 'الجولة',
+  'Speed': 'السرعة',
+  'Failure': 'فشل',
+  'per dumbbell': 'لكل دمبل',
+  'both dumbbells': 'الدمبلان معًا',
+  '{0} PR': '{0} رقم قياسي',
+  '{0} PRs': '{0} أرقام قياسية',
 }

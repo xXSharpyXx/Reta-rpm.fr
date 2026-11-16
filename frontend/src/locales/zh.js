@@ -2659,4 +2659,11 @@ export default {
   'Warm-up set': 'Warm-up set',
   'last time {0}': 'last time {0}',
   'never done yet': 'never done yet',
+  'Set': '组',
+  'Speed': '速度',
+  'Failure': '力竭',
+  'per dumbbell': '每个哑铃',
+  'both dumbbells': '两个哑铃',
+  '{0} PR': '{0} 个 PR',
+  '{0} PRs': '{0} 个 PR',
 }

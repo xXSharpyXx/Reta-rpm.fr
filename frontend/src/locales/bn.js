@@ -2738,4 +2738,11 @@ export default {
   'Warm-up set': 'Warm-up set',
   'last time {0}': 'last time {0}',
   'never done yet': 'never done yet',
+  'Set': 'সেট',
+  'Speed': 'গতি',
+  'Failure': 'ব্যর্থতা',
+  'per dumbbell': 'প্রতি ডাম্বেল',
+  'both dumbbells': 'দুটি ডাম্বেল মিলে',
+  '{0} PR': '{0} PR',
+  '{0} PRs': '{0} PR',
 }
