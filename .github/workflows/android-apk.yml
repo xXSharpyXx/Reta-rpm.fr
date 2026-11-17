@@ -51,7 +51,7 @@ jobs:
         working-directory: frontend
       - name: Build the APK
         working-directory: frontend/android
-        run: ./gradlew --no-daemon -PnoWear :app:assembleSideloadDebug
+        run: bash ../../scripts/gradle-annotate.sh --no-daemon -PnoWear :app:assembleSideloadDebug
       - name: Keep the APK
         uses: actions/upload-artifact@v4
         with:
@@ -60,7 +60,7 @@ jobs:
           if-no-files-found: error
       - name: Test and build the watch APK
         working-directory: frontend/android
-        run: ./gradlew --no-daemon :wear:testDebugUnitTest :wear:assembleDebug
+        run: bash ../../scripts/gradle-annotate.sh --no-daemon :wear:testDebugUnitTest :wear:assembleDebug
       - name: Keep the watch APK
         uses: actions/upload-artifact@v4
         with:
