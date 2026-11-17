@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
@@ -10,17 +10,14 @@ import { t } from '../lib/i18n.js'
 import {
   dayAssignSheet, starterPlanSheet, menuSheet,
   planHasRoutines, exportPlanFile, printWholePlan, importPlanFile,
-  startSession, workoutDetailSheet, WorkoutRow,
+  startSession,
 } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 import { Button, Row, Section } from '../components/ui.jsx'
-import SwipeRow from '../components/SwipeRow.jsx'
-import { copyRoutine, deleteRoutine, restoreRoutine, routineSnapshot } from '../lib/routines.js'
+import { deleteRoutine, restoreRoutine, routineSnapshot } from '../lib/routines.js'
 import MiniBodyMap from '../components/MiniBodyMap.jsx'
-import { workoutControls } from '../lib/workout-controls.js'
 import { tappable } from '../lib/use-sheet-keyboard.js'
-import { useListReorder } from '../lib/use-list-reorder.js'
 import { glyphOf, DEFAULT_GLYPH } from '../lib/glyphs.js'
 import { DEMO } from '../lib/demo.js'
 import { MOBILE } from '../lib/mobile.js'
@@ -53,13 +50,9 @@ export function undoDeleteRoutine(snap) {
   return ok
 }
 
-// The flash a row lands with when a swipe brought it (a duplicate, an undo): one per new value.
-let flashSeq = 0
-
 /* The Workouts page (one tab, in place of Plan and Start). Top to bottom: the performance review,
-   today's session with a big Start, the other sessions and a free one, the latest workouts done,
-   and the fixed week with its sessions to edit. Starting from here asks no confirmation: every
-   button already names what it starts. */
+   today's session with a big Start, the other sessions and a free one, and the fixed week. A tap
+   on a session offers to start it or to edit it; the big button and Freestyle start at once. */
 export default function Plan() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -104,11 +97,9 @@ export default function Plan() {
         accessory="chevron" onClick={() => nav('/plan/bilan')} />
     </Section>
     <TodayCard S={S} nav={nav} />
-    {!S.active && <OtherWorkouts S={S} />}
-    <LatestWorkouts S={S} nav={nav} />
+    <OtherWorkouts S={S} nav={nav} update={update} />
     <h4 className="sec plan-h">{t('My plans')}</h4>
     <Schedule S={S} nav={nav} />
-    <Routines S={S} update={update} nav={nav} />
     <Section className="plan-link">
       <Row icon="dumbbell" iconTint="var(--indigo)" title={t('Exercise library')} accessory="chevron" onClick={() => nav('/library')} />
     </Section>
@@ -121,6 +112,10 @@ export default function Plan() {
 // place (Resume), a session already done says so, and a rest day names the next one.
 function TodayCard({ S, nav }) {
   const today = todaySession(S, todayISO())
+  // The day's routines, each one to edit (a combined day holds several).
+  const editToday = () => today.routines.length === 1 ? nav('/plan/r/' + today.routines[0].id) : menuSheet({
+    title: t('Edit'), items: today.routines.map(r => ({ icon: glyphOf(r.emoji), label: r.name, chevron: true, onClick: () => nav('/plan/r/' + r.id) })),
+  })
   const start = () => startSession(today.ids)
   if (S.active) {
     const editing = !!S.active.editingWorkoutId
@@ -148,41 +143,53 @@ function TodayCard({ S, nav }) {
       <MiniBodyMap routines={today.routines} body={S.body} />
     </div>
     <Button variant={today.done ? 'tinted' : 'primary'} icon="play" className="today-go" onClick={start}>{t('Start {0}', today.name)}</Button>
+    <Button variant="ghost" size="sm" icon="pencil" className="today-edit" onClick={editToday}>{t('Edit')}</Button>
   </div>
 }
 
-// The other sessions, to start one instead of today's, and a free one picked as you go.
-function OtherWorkouts({ S }) {
+// The other sessions and a free one. A tap on a session asks what to do with it: start it, or edit
+// it (the list of sessions to edit that used to sit at the bottom of the page is this one now).
+// A session in progress hides the starting: there is only editing then.
+function OtherWorkouts({ S, nav, update }) {
   const ids = new Set(effectiveRoutineIds(S, todayISO()))
   const others = S.routines.filter(r => !ids.has(r.id))
+  const edit = r => nav('/plan/r/' + r.id)
+  const choose = r => S.active ? edit(r) : menuSheet({
+    title: r.name,
+    subtitle: exCount(r.ex.length),
+    items: [
+      { icon: 'play', label: t('Start'), accent: true, onClick: () => startSession([r.id]) },
+      { icon: 'pencil', label: t('Edit'), onClick: () => edit(r) },
+    ],
+  })
+  const addRoutine = () => {
+    const r = { id: uid(), name: t('New routine'), emoji: DEFAULT_GLYPH, ex: [] }
+    update(s => { s.routines.push(r) })
+    edit(r)
+  }
   // How many exercises, and when it was last done (lib/session-picker.js).
   const lastSub = r => { const last = lastDoneOf(S.workouts, r.id); return [exCount(r.ex.length), last ? t('last time {0}', fmtDaysAgo(last)) : t('never done yet')].join(' · ') }
   return <>
-    <h4 className="sec plan-h">{t('Other routines')}</h4>
+    <div className="row between plan-h">
+      <h4 className="sec" style={{ margin: 0 }}>{t('Other routines')}</h4>
+      <Button size="sm" variant="tinted" icon="plus" onClick={addRoutine}>{t('New routine')}</Button>
+    </div>
+    {!S.routines.length && <div className="empty plan-empty">
+      <div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Make one, or grab the starter plan to get going.')}
+      <div style={{ marginTop: 12 }}><Button icon="clipboard" onClick={starterPlanSheet}>{t('Load starter plan')}</Button></div>
+    </div>}
     <div className="list plan-others">
-      {others.map(r => <div key={r.id} className="item" {...tappable(() => startSession([r.id]))}>
+      {others.map(r => <div key={r.id} className="item" {...tappable(() => choose(r))}>
         <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
         <div className="grow"><div className="tt">{r.name}</div><div className="ss">{lastSub(r)}</div></div>
-        <span className="tag acc">{t('Start')}</span>
+        <Icon name="chevronRight" className="chev" />
       </div>)}
-      <div className="item" {...tappable(() => startSession([]))}>
+      {!S.active && <div className="item" {...tappable(() => startSession([]))}>
         <span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="shuffle" /></span>
         <div className="grow"><div className="tt">{t('Freestyle workout')}</div><div className="ss">{t('Pick the exercises as you go')}</div></div>
         <span className="tag acc">{t('Start')}</span>
-      </div>
+      </div>}
     </div>
-  </>
-}
-
-// The last workouts done, newest first: a tap opens the same read-back as Stats.
-function LatestWorkouts({ S, nav }) {
-  if (!S.workouts.length) return null
-  return <>
-    <div className="row between plan-h">
-      <h4 className="sec" style={{ margin: 0 }}>{t('Latest workouts')}</h4>
-      <Button size="sm" variant="ghost" trailingIcon="chevronRight" onClick={() => nav('/history')}>{t('All')} {S.workouts.length}</Button>
-    </div>
-    <div className="list plan-latest">{[...S.workouts].reverse().slice(0, 5).map(w => <WorkoutRow key={w.id || w.start} w={w} onClick={() => workoutDetailSheet(w)} />)}</div>
   </>
 }
 
@@ -214,90 +221,5 @@ function Schedule({ S, nav }) {
     <div className="list plan-week">{weekOrder(ws).map(dayRow)}</div>
     <p className="sect-f">{t('Want two routines on one day? Tap the day and pick both.')}</p>
 
-  </>
-}
-
-/* ================================ Routines ================================ */
-
-function Routines({ S, update, nav }) {
-  const [edit, setEdit] = useState(false)
-  const [flash, setFlash] = useState(null)
-  const swipe = workoutControls(S).swipeSets
-  const routines = S.routines
-  // The order of this list is the order of `S.routines`, and every other screen reads the same
-  // array (the Start screen, the day sheets, the routine pickers), so moving a routine here moves
-  // it everywhere (#142). Reordering lives behind Edit, like on an iPhone.
-  const reorder = useListReorder(routines.length, (from, to) => update(s => {
-    if (to < 0 || to >= s.routines.length) return
-    const [m] = s.routines.splice(from, 1)
-    s.routines.splice(to, 0, m)
-  }))
-
-  const addRoutine = () => {
-    const r = { id: uid(), name: t('New routine'), emoji: DEFAULT_GLYPH, ex: [] }
-    update(s => { s.routines.push(r) })
-    nav('/plan/r/' + r.id)
-  }
-  // The same delete as RoutineEdit's "Delete routine" button (lib/routines.js), with an Undo in
-  // place of its confirm (v1.3.11): the swipe and the edit-mode minus both land here.
-  const remove = r => deleteRoutineWithUndo(r.id)
-  // The swipe's other side: a copy right below the original, named the way "Copy routine" names
-  // one, and staying on this list rather than opening it.
-  const duplicate = r => {
-    const copy = copyRoutine(r, t('Copy'))
-    update(s => {
-      const at = s.routines.findIndex(x => x.id === r.id)
-      s.routines.splice(at < 0 ? s.routines.length : at + 1, 0, copy)
-    })
-    setFlash({ id: copy.id, n: ++flashSeq })
-    // With its own Undo: the toast takes the place of any Undo still showing (one toast at a
-    // time), so the newest swipe is at least the one you can take back.
-    useUI.getState().toast(t('Copied as “{0}”.', copy.name), { action: t('Undo'), onAction: () => {
-      update(s => { if (s.routines.some(x => x.id === copy.id)) deleteRoutine(s, copy.id) })
-    } })
-  }
-  // The weekdays a routine is on, short, in the order the week runs.
-  const order = weekOrder(weekStartOf(S))
-  const daysOf = id => order.filter(d => [].concat(S.week[d] || []).includes(id)).map(d => t(DAYS[d]))
-  const sub = r => [exCount(r.ex.length), daysOf(r.id).join(', ')].filter(Boolean).join(' · ')
-
-  return <>
-    <h4 className="sec plan-sub">{t('Routines')}</h4>
-    <div className="row between plan-sec-h plan-routines-bar">
-      {routines.length > 0
-        ? <button className="plan-textbtn" aria-pressed={edit} onClick={() => setEdit(e => !e)}>{edit ? t('Done') : t('Edit')}</button>
-        : <span />}
-      <Button size="sm" variant="tinted" icon="plus" onClick={addRoutine}>{t('New routine')}</Button>
-    </div>
-    {routines.length ? <>
-      {edit
-        ? <div className="list routine-list plan-routines is-editing" ref={reorder.listRef}>{routines.map((r, i) =>
-          <div key={r.id} data-reorder-row className="item plan-routine" style={reorder.rowStyle(i)}>
-            <button className="plan-minus" aria-label={t('Delete {0}', r.name)} title={t('Delete routine')} onClick={() => remove(r)}><Icon name="minus" /></button>
-            <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
-            <div className="grow"><div className="tt">{r.name}</div><div className="ss">{sub(r)}</div></div>
-            {routines.length > 1 && <button className="plan-handle" aria-label={t('Move {0}', r.name)} title={t('Drag to reorder')}
-              {...reorder.handle(i)}><Icon name="chevronsUpDown" /></button>}
-          </div>)}</div>
-        : <div className="list routine-list plan-routines">{routines.map(r => {
-          const row = <div key={r.id} className="item plan-routine" {...tappable(() => nav('/plan/r/' + r.id))}>
-            <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
-            <div className="grow"><div className="tt">{r.name}</div><div className="ss">{sub(r)}</div></div>
-            <MiniBodyMap routines={[r]} body={S.body} />
-            <Icon name="chevronRight" className="chev" /></div>
-          // Swipe (v1.3.11, Settings → Swipe actions): toward the start deletes with an Undo,
-          // toward the end duplicates. Edit's minus and the routine's own page stay the way in
-          // for a keyboard and a screen reader.
-          return swipe
-            ? <SwipeRow key={r.id} className="swrow-item" copyLabel={t('Duplicate')}
-              onDelete={() => remove(r)} onCopy={() => duplicate(r)}
-              flash={flash?.id === r.id ? flash.n : 0}>{row}</SwipeRow>
-            : row
-        })}</div>}
-      <p className="sect-f">{edit ? t('Drag to reorder. Tap the minus to delete.') : t('Tap a routine to edit it. Reorder and delete are behind Edit.')}</p>
-    </> : <>
-      <div className="empty"><div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Make one, or grab the starter plan to get going.')}</div>
-      <Button icon="clipboard" onClick={starterPlanSheet}>{t('Load starter plan')}</Button>
-    </>}
   </>
 }

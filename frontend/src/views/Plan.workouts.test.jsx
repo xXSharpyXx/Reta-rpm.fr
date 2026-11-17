@@ -1,13 +1,13 @@
 // @vitest-environment happy-dom
 // The Workouts page (views/Plan.jsx), one tab in place of Plan and Start. Top to bottom: the
-// performance review, today's session with a big Start, the other sessions and a free one, the
-// latest workouts, and the fixed week with its sessions. Its buttons start without the
-// "Start …?" confirmation or picker: each one already names what it starts.
+// performance review, today's session with a big Start, the other sessions and a free one, and
+// the fixed week. A tap on a session offers to start or edit it; the big button and Freestyle
+// start at once.
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Plan from './Plan.jsx'
-import { startSession, workoutDetailSheet } from '../sheets.jsx'
+import { startSession, menuSheet } from '../sheets.jsx'
 import { todayISO } from '../lib/format.js'
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -57,48 +57,67 @@ const button = text => [...host.querySelectorAll('button')].find(b => b.textCont
 const headings = () => [...host.querySelectorAll('h4.sec')].map(h => h.textContent)
 
 describe('the Workouts page', () => {
-  it('keeps the review at the top, then today, the others, the latest, the plans', () => {
+  it('keeps the review at the top, then today, the other sessions, the fixed week', () => {
     setS({ workouts: [{ id: 'w1', d: '2026-11-10', start: 1, end: 2, name: 'Old push', entries: [] }] })
     mount()
     const text = host.textContent
-    const order = ['Analyze my latest performance', "Today's plan", 'Other routines', 'Latest workouts', 'My plans', 'This week', 'Routines']
+    const order = ['Analyze my latest performance', "Today's plan", 'Other routines', 'My plans', 'This week']
     const at = order.map(s => text.indexOf(s))
     expect(at.every(i => i >= 0)).toBe(true)
     expect([...at].sort((a, b) => a - b)).toEqual(at)
+    // The latest workouts and the list of sessions to edit left the page (owner, 2026-11-17).
+    expect(text).not.toContain('Latest workouts')
+    expect(headings()).not.toContain('Routines')
+    expect(host.querySelector('.plan-routines')).toBeNull()
   })
 
-  it('starts today\'s session from its big button, without asking first', () => {
+  it("starts today's session from its big button, without asking first, and edits it from its own button", () => {
     mount()
     expect(host.querySelector('.today-name').textContent).toBe('Push')
     click(button('Start Push'))
     expect(startSession).toHaveBeenCalledWith(['push'])
+    click(host.querySelector('.today-edit'))
+    expect(mocks.nav).toHaveBeenCalledWith('/plan/r/push')
   })
 
-  it('offers the other sessions and a free one', () => {
+  it('a tap on another session offers to start it or to edit it', () => {
     mount()
     const rows = [...host.querySelectorAll('.plan-others .item')]
     expect(rows.map(r => r.querySelector('.tt').textContent)).toEqual(['Pull', 'Freestyle workout'])
     click(rows[0])
+    expect(startSession).not.toHaveBeenCalled()
+    const menu = menuSheet.mock.calls.at(-1)[0]
+    expect(menu.title).toBe('Pull')
+    expect(menu.items.map(i => i.label)).toEqual(['Start', 'Edit'])
+    menu.items[0].onClick()
     expect(startSession).toHaveBeenLastCalledWith(['pull'])
-    click(rows[1])
+    menu.items[1].onClick()
+    expect(mocks.nav).toHaveBeenLastCalledWith('/plan/r/pull')
+  })
+
+  it('Freestyle starts at once', () => {
+    mount()
+    click([...host.querySelectorAll('.plan-others .item')].at(-1))
     expect(startSession).toHaveBeenLastCalledWith([])
   })
 
-  it('opens a latest workout\'s detail', () => {
-    const w = { id: 'w1', d: '2026-11-10', start: 1, end: 2, name: 'Old push', entries: [] }
-    setS({ workouts: [w] })
+  it('New routine makes one and opens it', () => {
     mount()
-    click(host.querySelector('.plan-latest .wrow'))
-    expect(workoutDetailSheet).toHaveBeenCalledWith(w)
+    click(button('New routine'))
+    expect(mocks.S.routines).toHaveLength(3)
+    expect(mocks.nav).toHaveBeenLastCalledWith('/plan/r/' + mocks.S.routines[2].id)
   })
 
-  it('a session in progress takes today\'s place, and nothing else can start', () => {
+  it("a session in progress takes today's place; the others only open to edit", () => {
     setS({ active: { id: 'a', name: 'Push', start: Date.now(), entries: [], cur: 0 } })
     mount()
     expect(host.querySelector('.today-lbl').textContent).toBe('Workout in progress')
-    expect(host.querySelector('.plan-others')).toBeNull()
+    expect(host.textContent).not.toContain('Freestyle workout')
+    click(host.querySelector('.plan-others .item'))
+    expect(menuSheet).not.toHaveBeenCalled()
+    expect(mocks.nav).toHaveBeenLastCalledWith('/plan/r/pull')
     click(button('Resume'))
-    expect(mocks.nav).toHaveBeenCalledWith('/workout')
+    expect(mocks.nav).toHaveBeenLastCalledWith('/workout')
   })
 
   it('a rest day says so and names the next session', () => {
@@ -108,11 +127,10 @@ describe('the Workouts page', () => {
     expect(host.querySelector('.today-sub').textContent).toMatch(/Next session: .+, Pull/)
   })
 
-  it('shows the plans with no Schedule/Routines switch', () => {
+  it('shows the fixed week with no Schedule/Routines switch', () => {
     mount()
     expect(host.querySelector('.plan-views')).toBeNull()
     expect(host.querySelectorAll('.plan-week .plan-day')).toHaveLength(7)
-    expect(host.querySelectorAll('.plan-routines .plan-routine')).toHaveLength(2)
     expect(headings()).toContain('My plans')
   })
 })
