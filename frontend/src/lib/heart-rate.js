@@ -239,3 +239,22 @@ export function entryMarks(w) {
   }
   return out
 }
+
+/**
+ * When each exercise was being done, ms from the start: [{ ei, from, to }], in the order they
+ * began. `from` is the start of its first set's window, `to` its last tick. For the strip of
+ * exercises under the heart-rate chart.
+ */
+export function entrySpans(w) {
+  const start = Number(w?.start)
+  if (!(start > 0)) return []
+  const by = new Map()
+  for (const x of tickedSets(w)) {
+    const ei = Number(x.key.split(':')[0])
+    const from = Math.max(0, x.tick - x.len - start), to = Math.max(0, x.tick - start)
+    const cur = by.get(ei)
+    if (!cur) by.set(ei, { ei, from, to })
+    else { cur.from = Math.min(cur.from, from); cur.to = Math.max(cur.to, to) }
+  }
+  return [...by.values()].sort((a, b) => a.from - b.from)
+}

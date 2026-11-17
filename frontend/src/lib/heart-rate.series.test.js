@@ -53,3 +53,14 @@ describe('heart rate curve', () => {
     expect(entryMarks(w).map(m => m.ei)).toEqual([0, 1])
   })
 })
+
+describe('entrySpans', () => {
+  it('spans each exercise from its first set to its last tick', async () => {
+    const { entrySpans } = await import('./heart-rate.js')
+    expect(entrySpans(w)).toEqual([
+      { ei: 0, from: (120 - 24) * 1000, to: 300 * 1000 },
+      { ei: 1, from: (900 - 30) * 1000, to: 900 * 1000 },
+    ])
+    expect(entrySpans({ start: 0 })).toEqual([])
+  })
+})

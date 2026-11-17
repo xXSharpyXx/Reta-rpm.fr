@@ -294,3 +294,13 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -.02em }
 .dayw-exrow .thumb{width:44px;height:44px;flex:none;border-radius:50%}
 .dayw-exrow .grow{flex:1;min-width:0;overflow-wrap:anywhere}
 .dayw-card .dayw-more{display:flex;margin:8px auto 0;color:var(--label-2)}
+/* The exercises under the heart-rate curve: a bar for the minutes each took, its picture where it began. */
+.hr-strip{position:relative;margin:2px 0 4px;direction:ltr}
+.hr-strip-bars{position:relative;height:6px;margin-bottom:6px}
+.hr-strip-bars i{position:absolute;top:0;height:6px;min-width:4px;border-radius:3px;background:var(--surface-3)}
+.hr-strip-bars i.on{background:var(--label-2)}
+.hr-strip-ex{position:relative;height:34px}
+.hr-strip-b{position:absolute;top:0;transform:translateX(-4px);padding:0;border:0;background:none;cursor:pointer;border-radius:50%}
+.hr-strip-b .thumb{width:30px;height:30px;border-radius:50%;box-shadow:0 0 0 2px var(--surface)}
+.hr-strip-b.on{z-index:1}
+.hr-strip-b.on .thumb{box-shadow:0 0 0 2px var(--red)}

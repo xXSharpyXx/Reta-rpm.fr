@@ -9,6 +9,8 @@ import { t } from '../lib/i18n.js'
 const W = 340
 const PAD_R = 30   // room for the bpm labels on the right
 const PAD_B = 18   // room for the minutes under the curve
+// The share of the width the curve itself takes, for anything lined up under it.
+export const PLOT_SHARE = (W - PAD_R) / W
 
 // Gridlines every 5, 10, 15 or 30 minutes: about four to seven across the chart.
 const stepFor = min => [5, 10, 15, 30, 60].find(s => min / s <= 7) || 60
