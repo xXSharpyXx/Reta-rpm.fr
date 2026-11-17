@@ -91,8 +91,9 @@ dependencies {
     implementation "androidx.wear:wear-remote-interactions:$wearRemoteInteractionsVersion"
     // The future RemoteActivityHelper returns, for the compiler only: wear-remote-interactions
     // brings it at run time, but the graph swaps the bare interface for Guava's empty
-    // "avoid-conflict" stand-in on the compile classpath. Nothing more goes into the APK.
-    compileOnly "com.google.guava:guava:33.4.0-android"
+    // "avoid-conflict" stand-in on the compile classpath. The version the app already ships
+    // (ML Kit's, at run time); nothing more goes into the APK.
+    compileOnly "com.google.guava:guava:31.1-android"
     // The sharper animations as Play asset packs (AnimationPacksPlugin in src/play): the Play
     // build only. The sideloaded APK has no Play Store behind it and keeps its built-in ones.
     playImplementation "com.google.android.play:asset-delivery:$assetDeliveryVersion"
