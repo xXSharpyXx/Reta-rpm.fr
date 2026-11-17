@@ -1650,6 +1650,9 @@ export const PT_BR_OVERRIDES = {
   '“{0}” now follows this workout': '“{0}” agora segue este treino',
   '“{0}” stays as it was': '“{0}” fica como estava',
   'Notifications are off, so your workout can’t show on the lock screen. You can allow them in Android settings.': 'As notificações estão desligadas, então o treino não pode aparecer na tela de bloqueio. Você pode permitir nas configurações do Android.',
+  'Update Health Connect first, then try again.': 'Atualize primeiro o Health Connect e tente de novo.',
+  'Install Health Connect first, then try again.': 'Instale primeiro o Health Connect e tente de novo.',
+  'Read at every start. Sync reads them now.': 'Lidos a cada abertura. Sincronizar lê agora mesmo.',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }

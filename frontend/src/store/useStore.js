@@ -105,6 +105,10 @@ export const DEF = {
   // Body measurements (#82, #699): one check-in per day; canonical cm, kg or % according to
   // the field's unit (lib/measurements.js); merged like weigh-ins (lib/sync-merge.js).
   measurements: [], measurementEnabled: null, customMeasurements: [],
+  // Body composition read from Health Connect (a scale's app such as Renpho Health): one entry per
+  // day { d, t, src, fat, lean, bone, water, bmr }, and the newest height { m, t }
+  // (lib/health-read.js mergeBodyComp). Shown on the Body page (views/Body.jsx).
+  bodyComp: [], bodyHeight: null,
   queue: null,   // a floating week written by a planner through the API (lib/queue.js); the app never writes one
   exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
   // Stats activity heatmap metric. Profiles without this key continue to open on time.

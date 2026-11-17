@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // object and an `apply` that runs the change on it (as useStore's update does).
 const h = vi.hoisted(() => {
   vi.stubEnv('VITE_MOBILE', '1')
-  return { files: new Map(), calls: [], platform: 'android', granted: { heartRate: true, weight: true }, hr: [], weights: [], fail: null }
+  return { files: new Map(), calls: [], platform: 'android', granted: { heartRate: true, weight: true }, hr: [], weights: [], body: [], fail: null }
 })
 
 vi.mock('@capacitor/filesystem', () => ({
@@ -38,6 +38,11 @@ vi.mock('@capacitor/core', () => ({
       if (h.fail) throw Object.assign(new Error('no'), { code: h.fail })
       return { records: h.weights.filter(r => r.t >= arg.since) }
     },
+    readBody: async arg => {
+      h.calls.push(['readBody', arg])
+      if (h.fail) throw Object.assign(new Error('no'), { code: h.fail })
+      return { records: h.body.filter(r => r.type === 'height' || r.t >= arg.since) }
+    },
     write: async () => { h.calls.push(['write']) },
     remove: async () => {},
     openSettings: async () => {},
@@ -59,7 +64,7 @@ beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(NOW)
   vi.resetModules()
-  h.files.clear(); h.calls = []; h.platform = 'android'; h.granted = { heartRate: true, weight: true }; h.hr = []; h.weights = []; h.fail = null
+  h.files.clear(); h.calls = []; h.platform = 'android'; h.granted = { heartRate: true, weight: true }; h.hr = []; h.weights = []; h.body = []; h.fail = null
   S = { unit: 'kg', workouts: [workout('w1')], bodyweight: [] }
   applied = 0
   hs = await import('./health-sync.js')
@@ -148,7 +153,7 @@ describe('weigh-ins', () => {
   it('reads the last 30 days the first time, then from the newest seen', async () => {
     h.weights = [rec(2, 80.4), rec(26, 81, { clientId: 'opengym-bw-2026-10-14' })]
     await hs.enableRead('weight', getState, { apply })
-    expect(h.calls[0]).toEqual(['request', { read: ['weight'], write: [] }])
+    expect(h.calls[0]).toEqual(['request', { read: ['weight', 'bodyFat', 'leanMass', 'boneMass', 'bodyWater', 'bmr', 'height'], write: [] }])
     expect(reads('readWeights')[0][1].since).toBe(NOW - 30 * 24 * 3600e3)
     expect(S.bodyweight).toEqual([{ d: '2026-10-15', w: 80.4, t: NOW - 2 * 3600e3, src: 'hc' }])
     expect(file().wCursor).toBe(NOW - 2 * 3600e3)
@@ -198,7 +203,7 @@ describe('weigh-ins with the history permission', () => {
     await withHistory(true)
     h.weights = [rec(200, 84), rec(1, 80)]
     await hs.enableRead('weight', getState, { apply })
-    expect(h.calls[0]).toEqual(['request', { read: ['weight', 'history'], write: [] }])
+    expect(h.calls[0]).toEqual(['request', { read: ['weight', 'bodyFat', 'leanMass', 'boneMass', 'bodyWater', 'bmr', 'height', 'history'], write: [] }])
     expect(reads('readWeights')[0][1].since).toBe(NOW - 365 * 24 * 3600e3)
     expect(S.bodyweight.map(b => b.w)).toEqual([84, 80])
     expect(file().wHistory).toBe(true)
@@ -240,5 +245,39 @@ describe('weigh-ins with the history permission', () => {
     h.calls = []
     await hs.enableRead('weight', getState, { apply })
     expect(h.calls[0]).toEqual(['request', { read: ['weight'], write: [] }])
+  })
+})
+
+describe('body composition (Renpho Health and other scale apps)', () => {
+  const rec = (type, hAgo, v) => ({ type, t: NOW - hAgo * 3600e3, v, id: type + hAgo, origin: 'com.renpho.health', clientId: null })
+
+  it('reads it with the weigh-ins, one entry a day, nothing doubled on a resync', async () => {
+    h.body = [rec('fat', 2, 18.4), rec('lean', 2, 63.2), rec('height', 900, 1.8)]
+    await hs.enableRead('weight', getState, { apply })
+    expect(S.bodyComp).toEqual([{ d: '2026-10-15', t: NOW - 2 * 3600e3, src: 'hc', fat: 18.4, lean: 63.2 }])
+    expect(S.bodyHeight).toEqual({ m: 1.8, t: NOW - 900 * 3600e3 })
+    expect(file().bCursor).toBe(NOW - 2 * 3600e3)
+    const before = applied
+    const r = await hs.syncBodyNow(getState, { apply })
+    expect(r.ok).toBe(true)
+    expect(reads('readBody')).toHaveLength(2)
+    expect(applied).toBe(before)
+    expect(S.bodyComp).toHaveLength(1)
+  })
+
+  it('the Synchronise button turns the read on the first time', async () => {
+    await hs.loadHealth()
+    const r = await hs.syncBodyNow(getState, { apply })
+    expect(r.ok).toBe(true)
+    expect(h.calls[0][0]).toBe('request')
+    expect(file().readWeight).toBe(true)
+  })
+
+  it('asks again for a body permission still missing', async () => {
+    await hs.enableRead('weight', getState, { apply })
+    h.granted = { heartRate: true, weight: true, bodyFat: false, leanMass: true }
+    h.calls = []
+    await hs.syncBodyNow(getState, { apply })
+    expect(h.calls[0]).toEqual(['request', { read: ['bodyFat'], write: [] }])
   })
 })

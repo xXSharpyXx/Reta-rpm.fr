@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, forwardRef, useSyncExternalStore } from 'react'
 import { useNavigate, useParams, useLocation, Navigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
+import { BodySyncButton } from './Body.jsx'
 import { healthStatus, loadHealth, enableHealth, disableHealth, openHealthConnect, onHealthChange, enableRead, disableRead } from '../lib/health-sync.js'
 import { workoutControls } from '../lib/workout-controls.js'
 import { speedUnitOf } from '../lib/speed.js'
@@ -1609,6 +1610,7 @@ const HEALTH_COPY = {
 
 function HealthConnectCard({ S, toast, android }) {
   const getState = () => useStore.getState().S
+  const nav = useNavigate()
   const [st, setSt] = useState(null)
   const [h, setH] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -1691,6 +1693,12 @@ function HealthConnectCard({ S, toast, android }) {
         subtitle={t('Your smart scale’s weigh-ins land here. One you type in yourself always wins.')}>
         <Switch checked={!!h.readWeight} disabled={busy} onChange={toggleRead('weight')} />
       </Row>
+      {/* Android: weight, body fat and the rest of a scale's reading (Renpho Health...), read now. */}
+      {!ios && <Row icon="repeat" iconTint="var(--teal)" title={t('Weight and body composition')}
+        subtitle={t('Read at every start. Sync reads them now.')}>
+        <BodySyncButton withTime={false} />
+      </Row>}
+      {!ios && <Row icon="chartLine" iconTint="var(--teal)" title={t('Body')} accessory="chevron" onClick={() => nav('/body')} />}
       {reading && h.readError === 'permission' && <Row icon="warning" iconTint="var(--orange)"
         title={t('Permission withdrawn. Tap to allow again')} accessory="chevron"
         onClick={() => toggleRead(h.readHr ? 'hr' : 'weight')(true)} />}

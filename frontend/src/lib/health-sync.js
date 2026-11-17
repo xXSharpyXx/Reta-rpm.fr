@@ -18,7 +18,7 @@
 // no background or history permission is asked for. What it decides is in lib/health-read.js.
 //
 // The web build never gets here (MOBILE is a build-time flag).
-import { mergeHeartRate, mergeWeighIns, lacksHeartRate } from './health-read.js'
+import { mergeHeartRate, mergeWeighIns, mergeBodyComp, lacksHeartRate } from './health-read.js'
 import { MOBILE, nativePlatform, readJsonFile, writeJsonFile } from './mobile.js'
 import { healthRecords, planSync, writtenIds, goneIds } from './health-connect.js'
 import { exerciseNameFor } from './i18n-core.js'
@@ -26,7 +26,7 @@ import { EXIDX } from './exercises.js'
 import { speedUnitOf } from './speed.js'
 
 export const HEALTH_FILE = 'opengym-health.json'
-const OFF = { on: false, written: {}, at: 0, error: null, readHr: false, readWeight: false, wHistory: false, wCursor: 0, seen: {}, hrTried: {}, readError: null }
+const OFF = { on: false, written: {}, at: 0, error: null, readHr: false, readWeight: false, wHistory: false, wCursor: 0, bCursor: 0, readAt: 0, seen: {}, hrTried: {}, readError: null }
 
 // Wrapped in an object, as in rest-alert.js: a Capacitor plugin proxy answers `then`, so a
 // promise resolved with the bare proxy never settles.
@@ -235,6 +235,9 @@ const WEIGHT_MARGIN_MS = 2 * 24 * 3600e3
 const SEEN_KEEP_MS = 60 * 24 * 3600e3
 
 const srcOf = platform => (platform === 'ios' ? 'ah' : 'hc')
+// Android: the body composition a scale's app saves with the weight (Renpho Health...), asked for
+// together with the weigh-ins. Each one refused is simply not read (HealthConnectPlugin readBody).
+export const BODY_PERMS = ['bodyFat', 'leanMass', 'boneMass', 'bodyWater', 'bmr', 'height']
 
 // The store's update, given at launch (initHealthSync): a read result goes into the log the way any
 // other change does, so it is saved, stamped and synced.
@@ -254,7 +257,8 @@ export async function enableRead(kind, getState, { apply = null } = {}) {
   const perm = kind === 'hr' ? 'heartRate' : 'weight'
   // The history permission only where Health Connect has it (status says so); Apple Health has none.
   const history = kind === 'weight' && p.platform !== 'ios' && st.history === true
-  const res = await p.HC.requestPermissions({ read: history ? [perm, 'history'] : [perm], write: [] }).catch(() => null)
+  const body = kind === 'weight' && p.platform !== 'ios' ? BODY_PERMS : []
+  const res = await p.HC.requestPermissions({ read: [perm, ...body, ...(history ? ['history'] : [])], write: [] }).catch(() => null)
   // Apple Health never says whether reading was allowed (that it was refused is itself private):
   // `read` is then missing, and a refusal just reads nothing.
   const ok = res && (res.read ? res.read[perm] !== false : true)
@@ -351,10 +355,42 @@ async function readOnce(getState, force, now, applyFn) {
       const newest = records.reduce((m, r) => Math.max(m, Number(r?.t) || 0), 0)
       if (newest > h.wCursor) h.wCursor = newest
     } catch (e) { fail(e) }
+    // The rest of the scale's reading: fat, lean, bone and water mass, BMR, height (Android only).
+    if (!error && p.platform !== 'ios') {
+      const since = h.bCursor > 0 ? Math.max(h.bCursor - WEIGHT_MARGIN_MS, now - (h.wHistory ? WEIGHT_HISTORY_MS : WEIGHT_FIRST_MS)) : now - (h.wHistory ? WEIGHT_HISTORY_MS : WEIGHT_FIRST_MS)
+      try {
+        const res = await p.HC.readBody({ since })
+        const records = Array.isArray(res?.records) ? res.records : []
+        if (records.length) apply(probe => mergeBodyComp(probe, records, { src }).length > 0, st => { mergeBodyComp(st, records, { src }) })
+        const newest = records.filter(r => r?.type !== 'height').reduce((m, r) => Math.max(m, Number(r?.t) || 0), 0)
+        if (newest > h.bCursor) h.bCursor = newest
+      } catch (e) { if (e?.code === 'permission' || e?.code === 'unavailable') fail(e) }
+    }
+    if (!error) h.readAt = now
   }
 
   h.readError = error
   await saveHealth(h)
   told(h)
   return h
+}
+
+/**
+ * The Synchronise button (Settings, Body page): turns the weigh-in read on the first time, asks
+ * again for a body-composition permission not granted yet, then reads straight away, whatever the
+ * last read. Resolves with { ok, reason, health }; reason as enableRead's.
+ */
+export async function syncBodyNow(getState, { apply = null } = {}) {
+  const h = await loadHealth()
+  if (!h.readWeight) return enableRead('weight', getState, { apply })
+  const p = await plugin()
+  if (!p) return { ok: false, reason: 'unsupported' }
+  const st = await p.HC.status().catch(() => ({ status: 'unsupported' }))
+  if (st.status !== 'available') return { ok: false, reason: st.status }
+  const missing = ['weight', ...(p.platform !== 'ios' ? BODY_PERMS : [])].filter(k => st.read && st.read[k] === false)
+  if (missing.length) await p.HC.requestPermissions({ read: missing, write: [] }).catch(() => null)
+  if (readRunning) await readRunning.catch(() => {})
+  lastWeightRead = 0
+  const out = await readHealth(getState, { force: true, apply })
+  return { ok: !out?.readError, reason: out?.readError || null, health: out }
 }

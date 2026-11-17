@@ -2,13 +2,19 @@ package ch.duartesantos.opengym;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import androidx.health.connect.client.records.BodyFatRecord;
 import androidx.health.connect.client.records.HeartRateRecord;
+import androidx.health.connect.client.records.HeightRecord;
+import androidx.health.connect.client.records.LeanBodyMassRecord;
 import androidx.health.connect.client.records.WeightRecord;
 import androidx.health.connect.client.records.metadata.DataOrigin;
 import androidx.health.connect.client.records.metadata.Metadata;
+import androidx.health.connect.client.units.Length;
 import androidx.health.connect.client.units.Mass;
+import androidx.health.connect.client.units.Percentage;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Arrays;
@@ -71,5 +77,28 @@ public class HealthReadTest {
         assertEquals("android.permission.health.READ_HEALTH_DATA_HISTORY", HealthRead.readPermission("history"));
         assertEquals("android.permission.health.WRITE_EXERCISE", HealthRead.writePermission("exercise"));
         assertNull(HealthRead.readPermission("steps"));
+        for (String k : HealthRead.BODY) assertNotNull(k, HealthRead.readPermission(k));
+        assertEquals("android.permission.health.READ_BODY_FAT", HealthRead.readPermission("bodyFat"));
+    }
+
+    @Test
+    public void bodyCompositionAsPlainValues() {
+        Metadata scale = new Metadata(Metadata.RECORDING_METHOD_AUTOMATICALLY_RECORDED, "rec-3", new DataOrigin("com.renpho.health"),
+                Instant.ofEpochMilli(5), null, 0, null);
+        List<HealthRead.Body> fat = HealthRead.bodyFat(Arrays.asList(
+                new BodyFatRecord(Instant.ofEpochMilli(3_000), ZoneOffset.UTC, new Percentage(18.4), scale)));
+        assertEquals(1, fat.size());
+        assertEquals("fat", fat.get(0).type);
+        assertEquals(3_000, fat.get(0).t);
+        assertEquals(18.4, fat.get(0).v, 1e-9);
+        assertEquals("com.renpho.health", fat.get(0).origin);
+        List<HealthRead.Body> lean = HealthRead.leanMass(Arrays.asList(
+                new LeanBodyMassRecord(Instant.ofEpochMilli(3_000), ZoneOffset.UTC, Mass.kilograms(62.5), scale)));
+        assertEquals("lean", lean.get(0).type);
+        assertEquals(62.5, lean.get(0).v, 1e-9);
+        List<HealthRead.Body> height = HealthRead.height(Arrays.asList(
+                new HeightRecord(Instant.ofEpochMilli(1_000), ZoneOffset.UTC, Length.meters(1.78), scale)));
+        assertEquals("height", height.get(0).type);
+        assertEquals(1.78, height.get(0).v, 1e-9);
     }
 }

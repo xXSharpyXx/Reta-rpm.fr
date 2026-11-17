@@ -8,8 +8,14 @@ import androidx.activity.result.contract.ActivityResultContract;
 import androidx.health.connect.client.HealthConnectClient;
 import androidx.health.connect.client.HealthConnectFeatures;
 import androidx.health.connect.client.PermissionController;
+import androidx.health.connect.client.records.BasalMetabolicRateRecord;
+import androidx.health.connect.client.records.BodyFatRecord;
+import androidx.health.connect.client.records.BodyWaterMassRecord;
+import androidx.health.connect.client.records.BoneMassRecord;
 import androidx.health.connect.client.records.ExerciseSessionRecord;
 import androidx.health.connect.client.records.HeartRateRecord;
+import androidx.health.connect.client.records.HeightRecord;
+import androidx.health.connect.client.records.LeanBodyMassRecord;
 import androidx.health.connect.client.records.Record;
 import androidx.health.connect.client.records.WeightRecord;
 import androidx.health.connect.client.records.metadata.Metadata;
@@ -69,6 +75,7 @@ import org.json.JSONObject;
  *   await HC.requestPermissions({ read: ['heartRate'], write: [] });  // { granted, read: { heartRate, weight } }
  *   await HC.readHeartRate({ from, to });   // { samples: [[ms, bpm]], origins: [package] }
  *   await HC.readWeights({ since });        // { records: [{ t, kg, id, origin, clientId }] }
+ *   await HC.readBody({ since });           // { records: [{ type, t, v, id, origin, clientId }], read }
  * Foreground only: no READ_HEALTH_DATA_IN_BACKGROUND. Without READ_HEALTH_DATA_HISTORY Health
  * Connect gives 30 days back from the first grant, plenty for the workout just done; weigh-ins
  * ask for it too (read: ['weight', 'history']) where Health Connect has the feature, which
@@ -314,6 +321,54 @@ public class HealthConnectPlugin extends Plugin {
         });
     }
 
+    // Body composition next to the weigh-ins (what Renpho Health and other scale apps save): each
+    // type read only when its permission is granted, so one the user left off never fails the rest.
+    @PluginMethod
+    public void readBody(PluginCall call) {
+        if (!"available".equals(sdkStatus())) {
+            call.reject("Health Connect is not available", "unavailable");
+            return;
+        }
+        Long since = millis(call, "since");
+        if (since == null) {
+            call.reject("since is needed", "failed");
+            return;
+        }
+        worker.execute(() -> {
+            try {
+                Set<String> got = granted();
+                TimeRangeFilter range = TimeRangeFilter.after(Instant.ofEpochMilli(since));
+                List<HealthRead.Body> all = new ArrayList<>();
+                if (got.contains(HealthRead.readPermission("bodyFat"))) all.addAll(HealthRead.bodyFat(read(BodyFatRecord.class, range)));
+                if (got.contains(HealthRead.readPermission("leanMass"))) all.addAll(HealthRead.leanMass(read(LeanBodyMassRecord.class, range)));
+                if (got.contains(HealthRead.readPermission("boneMass"))) all.addAll(HealthRead.boneMass(read(BoneMassRecord.class, range)));
+                if (got.contains(HealthRead.readPermission("bodyWater"))) all.addAll(HealthRead.bodyWater(read(BodyWaterMassRecord.class, range)));
+                if (got.contains(HealthRead.readPermission("bmr"))) all.addAll(HealthRead.bmr(read(BasalMetabolicRateRecord.class, range)));
+                // The height is read whatever its date: a scale app writes it once, at setup.
+                if (got.contains(HealthRead.readPermission("height"))) all.addAll(HealthRead.height(read(HeightRecord.class, TimeRangeFilter.after(Instant.EPOCH))));
+                JSArray records = new JSArray();
+                for (HealthRead.Body b : all) {
+                    JSObject o = new JSObject();
+                    o.put("type", b.type);
+                    o.put("t", b.t);
+                    o.put("v", b.v);
+                    o.put("id", b.id);
+                    o.put("origin", b.origin);
+                    o.put("clientId", b.clientId);
+                    records.put(o);
+                }
+                JSObject out = new JSObject();
+                out.put("records", records);
+                out.put("read", readState(got));
+                call.resolve(out);
+            } catch (SecurityException e) {
+                call.reject(e.getMessage(), "permission");
+            } catch (Exception e) {
+                call.reject(e.getMessage(), "failed");
+            }
+        });
+    }
+
     // Every page of one record type in the window, oldest first.
     @SuppressWarnings("unchecked")
     private <T extends Record> List<T> read(Class<T> type, TimeRangeFilter range) throws InterruptedException {
@@ -359,6 +414,7 @@ public class HealthConnectPlugin extends Plugin {
         r.put("heartRate", granted.contains(READ_HEART_RATE));
         r.put("weight", granted.contains(READ_WEIGHT));
         r.put("history", granted.contains(READ_HISTORY));
+        for (String k : HealthRead.BODY) r.put(k, granted.contains(HealthRead.readPermission(k)));
         return r;
     }
 

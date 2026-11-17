@@ -31,7 +31,7 @@ export default function TabBar() {
   const cur = loc.pathname.split('/')[1] || 'home'
   // A screen without a tab of its own lights the tab it is opened from. The exercise library is no
   // longer a tab: it opens from the Workouts page, and Muscles from Stats.
-  const PARENT = { history: 'stats', 'structural-balance': 'stats', 'progress-photos': 'stats', measurements: 'stats', settings: 'home', checkin: 'home', muscles: 'stats', library: 'plan' }
+  const PARENT = { history: 'stats', 'structural-balance': 'stats', 'progress-photos': 'stats', measurements: 'stats', body: 'stats', settings: 'home', checkin: 'home', muscles: 'stats', library: 'plan' }
   const parent = PARENT[cur]
   const on = k => cur === k || parent === k
 

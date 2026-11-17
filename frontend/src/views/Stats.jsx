@@ -768,9 +768,11 @@ export default function Stats() {
         {/* the weekly rate and, with one set, how it sits in its corridor (#759) */}
         {S.bodyweight.length > 0 && <WeightRate S={S} />}
         {/* every weigh-in, week by week with its average (Discord 'Weight') */}
-        {S.bodyweight.length > 0 && <div className="row" style={{ justifyContent: 'flex-end', marginTop: 4 }}>
-          <Button size="sm" variant="ghost" trailingIcon="chevronRight" onClick={weighInsSheet}>{t('All weigh-ins')}</Button>
-        </div>}
+        {/* the Body page: last weigh-in, body fat and the rest of what a smart scale measured */}
+        <div className="row" style={{ justifyContent: 'flex-end', marginTop: 4, gap: 6 }}>
+          <Button size="sm" variant="ghost" trailingIcon="chevronRight" onClick={() => nav('/body')}>{t('Body')}</Button>
+          {S.bodyweight.length > 0 && <Button size="sm" variant="ghost" trailingIcon="chevronRight" onClick={weighInsSheet}>{t('All weigh-ins')}</Button>}
+        </div>
         <SeasonDeco spot="stats-web" />
       </div>
 

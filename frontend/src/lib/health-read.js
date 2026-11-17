@@ -108,3 +108,70 @@ export function mergeWeighIns(S, records, { src, seen = {} } = {}) {
   if (days.length) S.bodyweight.sort((a, b) => (a.d < b.d ? -1 : 1))
   return days
 }
+
+/* ------------------------------------------------------------ body composition (Renpho...) -- */
+
+// What a smart scale's app saves next to the weight (Renpho Health, Withings, Eufy...), as the
+// Android plugin reads it (readBody): fat in %, lean, bone and water in kg, bmr in kcal a day,
+// height in metres. Outside these bounds it is a typo or someone else's profile in the hub.
+export const BODY_TYPES = {
+  fat: { min: 2, max: 75, round: 10 },
+  lean: { min: 10, max: 250, round: 100 },
+  bone: { min: 0.5, max: 15, round: 100 },
+  water: { min: 5, max: 200, round: 100 },
+  bmr: { min: 400, max: 6000, round: 1 },
+  height: { min: 0.8, max: 2.6, round: 1000 },
+}
+
+/**
+ * Body-composition readings from the hub (`records`: [{ type, t, v, id, origin, clientId }]) put
+ * into `S.bodyComp` (mutated): one entry per day, { d, t, src, fat?, lean?, bone?, water?, bmr? },
+ * each value the latest of its day, `t` the newest reading in it. Reading the same records again
+ * changes nothing, so a resync never makes a duplicate. The height is kept apart, in `S.bodyHeight`
+ * ({ m, t }), the newest one: a scale app writes it once, at setup. Returns the days changed (and
+ * 'height' when the height changed).
+ */
+export function mergeBodyComp(S, records, { src = 'hc' } = {}) {
+  const days = new Map()   // day -> { type -> { t, v } }
+  let height = null
+  for (const r of Array.isArray(records) ? records : []) {
+    if (!r || isOwnRecord(r)) continue
+    const spec = BODY_TYPES[r.type]
+    const t = Number(r.t), v = Number(r.v)
+    if (!spec || !(t > 0) || !(v >= spec.min && v <= spec.max)) continue
+    const value = Math.round(v * spec.round) / spec.round
+    if (r.type === 'height') {
+      if (!height || t > height.t) height = { m: value, t }
+      continue
+    }
+    const d = isoOf(new Date(t))
+    const day = days.get(d) || {}
+    if (!day[r.type] || t > day[r.type].t) day[r.type] = { t, v: value }
+    days.set(d, day)
+  }
+  const changed = []
+  if (height) {
+    const cur = S.bodyHeight
+    if (!cur || (height.t >= Number(cur.t || 0) && (cur.m !== height.m || cur.t !== height.t))) {
+      S.bodyHeight = height
+      changed.push('height')
+    }
+  }
+  if (!days.size) return changed
+  if (!Array.isArray(S.bodyComp)) S.bodyComp = []
+  for (const [d, day] of days) {
+    let ex = S.bodyComp.find(e => e && e.d === d)
+    let touched = false
+    if (!ex) { ex = { d, t: 0, src }; S.bodyComp.push(ex); touched = true }
+    for (const [type, r] of Object.entries(day)) {
+      if (ex[type] === r.v) continue
+      ex[type] = r.v
+      touched = true
+    }
+    const newest = Math.max(Number(ex.t) || 0, ...Object.values(day).map(r => r.t))
+    if (newest !== ex.t) { ex.t = newest; touched = true }
+    if (touched) changed.push(d)
+  }
+  if (changed.some(d => d !== 'height')) S.bodyComp.sort((a, b) => (a.d < b.d ? -1 : 1))
+  return changed
+}
