@@ -70,8 +70,8 @@ dependencies {
     implementation "androidx.core:core-ktx:$androidxCoreVersion"
     implementation "androidx.activity:activity-compose:$androidxActivityVersion"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.9.4"
-    implementation "androidx.wear.compose:compose-material:1.7.1"
-    implementation "androidx.wear.compose:compose-foundation:1.7.1"
+    implementation "androidx.wear.compose:compose-material:1.6.2"
+    implementation "androidx.wear.compose:compose-foundation:1.6.2"
     // The heart rate during the workout (ExerciseClient), on the watch's own sensor.
     implementation "androidx.health:health-services-client:1.1.0"
     // The Data Layer between the watch and the phone, over their own link.
