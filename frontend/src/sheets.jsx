@@ -54,7 +54,7 @@ import { clampIncline, inclineFits, INCLINE_MAX, INCLINE_STEP } from './lib/incl
 import { buildCompletedWorkout, sessionEnd } from './lib/finish-workout.js'
 import { isWarmupRow, hasCompletedWork } from './lib/workout-model.js'
 import { ownExerciseRest } from './lib/supersetFlow.js'
-import { saveSessionAsRoutine, routineAdditions, addToRoutine } from './lib/session-routines.js'
+import { saveSessionAsRoutine, templateChanges, applyTemplate } from './lib/session-routines.js'
 import { repeatSessionEntries } from './lib/session-repeat.js'
 import { swapActiveExercise } from './lib/active-exercise-swap.js'
 import { useSheetKeyboard, useRevealActiveChip, tappable } from './lib/use-sheet-keyboard.js'
@@ -3628,27 +3628,42 @@ function CardioDone({ st, w }) {
 
 // Exercises added during a routine's session, offered to that routine for next time (#592). One
 // tap adds them with today's setup; leaving the summary without it changes nothing.
-function KeepInRoutine({ additions }) {
-  const [added, setAdded] = useState({})
-  if (!additions?.length) return null
-  const keep = a => {
-    let n = 0
-    update(s => { n = addToRoutine(s.routines.find(r => r.id === a.routineId), a.ex) })
-    setAdded(x => ({ ...x, [a.routineId]: true }))
-    if (n) ui().toast(t('Routine updated'))
+// The finish asks, per routine of the workout, whether what was just done becomes that routine's
+// template (owner, 2026-11-17): the exercises done, in their order, with their set counts and
+// supersets (lib/session-routines.js templateChanges). Asked only where the workout differs from
+// the template, and nothing is written unless "Use this workout as the template" is tapped.
+function TemplateChoice({ templates }) {
+  const [picked, setPicked] = useState({})
+  if (!templates?.length) return null
+  const nameOf = id => (EXIDX[id] ? exerciseNameText(EXIDX[id]) : id)
+  const useIt = tp => {
+    let ok = false
+    update(s => { ok = applyTemplate(s.routines.find(r => r.id === tp.routineId), tp.changes.ex) })
+    setPicked(x => ({ ...x, [tp.routineId]: ok ? 'new' : 'old' }))
+    if (ok) ui().toast(t('Routine updated'))
   }
-  return <div style={{ textAlign: 'start', marginBottom: 14 }} data-keep-in-routine>
-    <h4 className="sec">{t('New in this workout')}</h4>
-    {additions.map(a => <div key={a.routineId} style={{ marginBottom: 8 }}>
-      <div className="small dim" style={{ marginBottom: 6 }}>{a.ex.map(cfg => EXIDX[cfg.id] ? exerciseNameText(EXIDX[cfg.id]) : cfg.id).join(', ')}</div>
-      {added[a.routineId]
-        ? <div className="small accent row" style={{ gap: 6 }}><Icon name="checkCircle" /><span>{t('Added to “{0}”', a.name)}</span></div>
-        : <Button icon="plusCircle" onClick={() => keep(a)}>{tn('Add it to “{1}”', 'Add them to “{1}”', a.ex.length, a.name)}</Button>}
+  const lines = c => [
+    c.added.length ? t('Added: {0}', c.added.map(nameOf).join(', ')) : null,
+    c.removed.length ? t('Not done: {0}', c.removed.map(nameOf).join(', ')) : null,
+    ...c.sets.map(x => t('{0}: {1} sets instead of {2}', nameOf(x.id), x.to, x.from)),
+    c.reordered ? t('Different order') : null,
+    c.supersets ? t('Different supersets') : null,
+  ].filter(Boolean)
+  return <div className="tpl-choice" data-template-choice>
+    {templates.map(tp => <div key={tp.routineId} className="tpl-item" data-routine={tp.routineId}>
+      <h4 className="sec">{t('Use this workout as the template for “{0}”?', tp.name)}</h4>
+      <ul className="tpl-lines">{lines(tp.changes).map((l, i) => <li key={i}>{l}</li>)}</ul>
+      {picked[tp.routineId]
+        ? <div className="small accent row" style={{ gap: 6 }}><Icon name="checkCircle" /><span>{picked[tp.routineId] === 'new' ? t('“{0}” now follows this workout', tp.name) : t('“{0}” stays as it was', tp.name)}</span></div>
+        : <div className="tpl-acts">
+          <Button variant="tinted" icon="checkCircle" onClick={() => useIt(tp)}>{t('Use this workout as the template')}</Button>
+          <Button variant="ghost" onClick={() => setPicked(x => ({ ...x, [tp.routineId]: 'old' }))}>{t('Keep the current template')}</Button>
+        </div>}
     </div>)}
   </div>
 }
 
-function FinishSummary({ w, prs, e1prs = [], additions = [], close }) {
+function FinishSummary({ w, prs, e1prs = [], templates = [], close }) {
   const st = useStore(s => s.S)
   return <div style={{ textAlign: 'center', padding: '8px 0' }}>
     {/* Sticky, so the summary can be left from the top however far it has been scrolled. */}
@@ -3670,7 +3685,7 @@ function FinishSummary({ w, prs, e1prs = [], additions = [], close }) {
     <div style={{ height: 14 }} />
     <LastAndNext st={st} w={w} />
     <CardioDone st={st} w={w} />
-    <KeepInRoutine additions={additions} />
+    <TemplateChoice templates={templates} />
     {/* The moment for a progress photo or the clip of a set: the workout is already saved, so
         what is added here goes straight onto its record. */}
     <div style={{ textAlign: 'start' }}><WorkoutMediaSection w={w} hint /></div>
@@ -3737,8 +3752,10 @@ function doFinishWorkout() {
     snapshotFor: e => isCustomEx(EXIDX[e.id]) ? exerciseMuscleSnapshot(EXIDX[e.id]) : null,
   })
   w.vol = workoutVolume(w)
-  // Read before the session is gone: the summary offers these to their routines (#592).
-  const additions = past ? [] : routineAdditions(A, st.routines)
+  // Per routine of the workout, how it differs from that routine's template: the summary asks
+  // whether to keep it as the new template (TemplateChoice). A workout logged into the past is not asked.
+  const templates = past ? [] : [].concat(w.routineIds ?? []).map(id => st.routines.find(r => r.id === id)).filter(Boolean)
+    .map(r => ({ routineId: r.id, name: r.name, changes: templateChanges(r, w) })).filter(x => x.changes)
   let shown = w
   update(s => {
     if (past) {
@@ -3766,5 +3783,5 @@ function doFinishWorkout() {
   // into s.active, which is gone. What it held is not logged, like any set left unchecked.
   useUI.getState().stopWork()
   beep(snd(), 880, 0.15); beep(snd(), 1100, 0.15, 0.18); beep(snd(), 1320, 0.3, 0.36)
-  ui().openSheet(close => <FinishSummary w={shown} prs={prs} e1prs={e1prs} additions={additions} close={close} />, { kind: 'center', locked: true, wide: true })
+  ui().openSheet(close => <FinishSummary w={shown} prs={prs} e1prs={e1prs} templates={templates} close={close} />, { kind: 'center', locked: true, wide: true })
 }

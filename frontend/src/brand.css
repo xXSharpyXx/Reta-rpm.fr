@@ -230,3 +230,11 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -.02em }
 .today-sub{margin-top:3px;font-size:14px;color:var(--label-2)}
 .today-go{width:100%;margin-top:16px;min-height:52px;font-size:17px}
 .today-card .today-edit{display:flex;margin:8px auto 0}
+
+/* --------------------------------------------- Finish: keep the workout as the template -- */
+.tpl-choice{text-align:start;margin-bottom:14px;display:flex;flex-direction:column;gap:12px}
+.tpl-item{background:var(--surface-2);border-radius:var(--r);padding:12px 14px}
+.tpl-item h4.sec{margin:0 0 6px;text-transform:none;letter-spacing:0;font-size:15px;color:var(--label)}
+.tpl-lines{margin:0 0 10px;padding-inline-start:18px;font-size:13px;color:var(--label-2);display:flex;flex-direction:column;gap:2px}
+.tpl-acts{display:flex;flex-direction:column;gap:6px}
+.tpl-acts .btn{width:100%}

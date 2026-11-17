@@ -1547,7 +1547,8 @@ function ActiveWorkout() {
         // source, target); freestyle reproduces what you did last time (buildSessionEntry).
         const built = buildSessionEntry(s, ex.id, cfg, routine, curEntry)
         const insertAt = insertionIndexAfterCurrentUnit(supersetUnits(s.active.entries), s.active.cur, s.active.entries.length)
-        // `addedInSession`: the finish summary offers to keep it in the routine (#592).
+        // `addedInSession`: marks it as added during the session (#592); the finish summary offers the
+        // whole workout as the routine's new template (lib/session-routines.js templateChanges).
         s.active.entries.splice(insertAt, 0, joinSessionNoProg(s.active, { id: ex.id, ...built, ...(curRid ? { rid: curRid, addedInSession: true } : {}), ...(noProg ? { noProg: true } : {}) }))
         s.active.cur = insertAt
         useUI.getState().shiftRestOwner(insertAt, 1)
