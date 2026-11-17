@@ -169,7 +169,9 @@ describe('startWatchSync', () => {
       heard.watchState({ installed: true })
       await vi.runAllTimersAsync()
       expect(b.sendSnapshot).toHaveBeenCalledTimes(2)
-      expect(b.sendSnapshot.mock.calls[1][0].json).toBe(b.sendSnapshot.mock.calls[0][0].json)
+      // the same snapshot: only the phone's clock it carries (`now`) moved on
+      const body = c => { const { now, ...rest } = JSON.parse(c[0].json); return rest }
+      expect(body(b.sendSnapshot.mock.calls[1])).toEqual(body(b.sendSnapshot.mock.calls[0]))
       stop()
     } finally { vi.useRealTimers() }
   })

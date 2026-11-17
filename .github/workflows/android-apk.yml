@@ -7,6 +7,11 @@
 # The steps are the ones test.yml already uses for its Android job, minus the unit tests. The APK is
 # a debug build, signed with the debug key, which is fine to install on your own phone. It carries
 # the repo's own 180 px exercise animations (see NOTICE.md for their licence).
+#
+# The same run builds the Wear OS watch app (frontend/android/wear, docs/WEAR_OS.md): artifact
+# "reta-rpm-wear-apk". Both are signed with the same key (app/reta-debug.keystore) and carry the
+# same applicationId (ch.duartesantos.opengym.test), which the watch link needs. The phone APK is
+# built and kept first, without the watch module (-PnoWear), so the watch can never hold it back.
 name: Android APK
 
 on:
@@ -46,10 +51,19 @@ jobs:
         working-directory: frontend
       - name: Build the APK
         working-directory: frontend/android
-        run: ./gradlew --no-daemon assembleSideloadDebug
+        run: ./gradlew --no-daemon -PnoWear :app:assembleSideloadDebug
       - name: Keep the APK
         uses: actions/upload-artifact@v4
         with:
           name: reta-rpm-apk
           path: frontend/android/app/build/outputs/apk/sideload/debug/*.apk
+          if-no-files-found: error
+      - name: Test and build the watch APK
+        working-directory: frontend/android
+        run: ./gradlew --no-daemon :wear:testDebugUnitTest :wear:assembleDebug
+      - name: Keep the watch APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: reta-rpm-wear-apk
+          path: frontend/android/wear/build/outputs/apk/debug/*.apk
           if-no-files-found: error

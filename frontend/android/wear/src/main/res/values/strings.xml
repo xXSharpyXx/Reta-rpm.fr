@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Reta-rpm.fr</string>
+    <string name="no_session_title">No workout running</string>
+    <string name="no_session_body">Start one on your phone: it shows up here.</string>
+    <string name="all_done_title">All sets done</string>
+    <string name="all_done_body">Finish the workout on your phone.</string>
+    <string name="set_of">Set %1$d/%2$d</string>
+    <string name="warmup_of">Warm-up %1$d/%2$d</string>
+    <string name="done_button">Set done</string>
+    <string name="rest">Rest</string>
+    <string name="skip">Skip</string>
+    <string name="next">Next: %1$s</string>
+    <string name="bodyweight">Bodyweight</string>
+    <string name="hr_off">Heart rate off: tap to allow</string>
+    <string name="notif_channel">Workout</string>
+    <string name="notif_title">Workout in progress</string>
+    <string name="notif_text">Measuring your heart rate</string>
+</resources>

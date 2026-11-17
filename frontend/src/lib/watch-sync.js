@@ -12,8 +12,14 @@
 // id, and only then acknowledged, which takes it out of the native queue; until the workout screen
 // is there to apply it, it waits in that queue.
 //
-// The iPhone app only. Without a paired watch with the app on it, nothing is sent and nothing
-// arrives: the phone behaves exactly as before.
+// The Android app speaks the same protocol with a Wear OS watch (native: WatchBridgePlugin.java and
+// WatchListenerService.java, the watch app: frontend/android/wear). The Wear OS watch follows the
+// phone rather than running the session itself, and adds three things: its rest buttons
+// (restAdd, restSkip) and the heart rate it measures for the whole session, written by the native
+// side into one file per workout and read back here once the workout is saved (mergeWatchHr).
+//
+// Without a paired watch with the app on it, nothing is sent and nothing arrives: the phone
+// behaves exactly as before.
 import { MOBILE, nativePlatform } from './mobile.js'
 import { EXIDX, gifSrc, figureOf, isAssisted } from './exercises.js'
 import { packId, packDrawingId } from './anim-quality.js'
@@ -29,6 +35,7 @@ import { todayISO, exerciseNameText } from './format.js'
 import { sanitizeHr } from './heart-rate.js'
 import { readWatchPrefs, settingsForWatch, writeWatchStatus, onWatchPrefs } from './watch-settings.js'
 import { plannedType } from './health-connect.js'
+import { accentPair, accentValue } from './accent.js'
 
 export const SNAPSHOT_VERSION = 1
 const APPLIED_KEY = 'gym_watch_applied'
@@ -36,6 +43,8 @@ const APPLIED_MAX = 300
 const SEND_DEBOUNCE_MS = 400
 // Routines the watch can start besides today's: enough to choose from, small enough to send.
 const READY_MAX = 8
+// A rest button pressed on the watch counts only while that rest can still be running.
+export const REST_EVENT_MAX_AGE_MS = 60 * 1000
 
 const num = v => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 // A body weight from the watch that holds up (kg or lb, whatever the profile uses).
@@ -238,6 +247,8 @@ function entryIndexOf (A, ev) {
  *   finish  { wid, at }              the workout screen's own Finish and save
  *   discard { wid, at }              the workout screen's own Discard (confirmed on the watch)
  *   setHr   { wid, exId, entryIdx, setIdx, hr?, restHr? }   heart rate on a set (lib/heart-rate.js)
+ *   restAdd { wid, sec, at }         the rest's own +15 s / -15 s (Wear OS)
+ *   restSkip { wid, at }             the rest's own Skip (Wear OS)
  *
  * A tick for a workout already saved (finished on the phone while the watch was away) is written
  * into that saved workout, stamped so the next sync keeps it. A tick while the workout screen is
@@ -304,6 +315,15 @@ export function applyEvents (events, getState) {
         if (!appHandlers) break
         appHandlers.patchSet({ wid: ev.wid, exId: ev.exId, entryIdx: ev.entryIdx, setIdx: ev.setIdx }, fields)
       }
+    } else if ((ev.type === 'restAdd' || ev.type === 'restSkip') && ours) {
+      // The rest is the phone's (useUI's timer): the watch's buttons move it as the phone's own do.
+      // A press older than a minute is about a rest long over: dropped, not replayed on the next one.
+      if (!appHandlers?.restAdd) break
+      const stale = num(ev.at) && Date.now() - num(ev.at) > REST_EVENT_MAX_AGE_MS
+      if (!stale) {
+        if (ev.type === 'restSkip') appHandlers.restSkip()
+        else if (num(ev.sec)) appHandlers.restAdd(Math.max(-600, Math.min(600, Math.round(num(ev.sec)))))
+      }
     } else if ((ev.type === 'finish' || ev.type === 'discard') && ours) {
       if (!handlers) {
         if (appHandlers?.openWorkout) appHandlers.openWorkout()
@@ -333,7 +353,9 @@ let pluginP = null
 // Inside an object: a Capacitor plugin proxy answers `then`, so a promise must never resolve with
 // the bare proxy (lib/rest-alert.js, the Coach hang #42).
 const watchPlugin = () => pluginP || (pluginP = (async () => {
-  if (!MOBILE || (await nativePlatform()) !== 'ios') return null
+  if (!MOBILE) return null
+  const platform = await nativePlatform()
+  if (platform !== 'ios' && platform !== 'android') return null
   const { registerPlugin } = await import('@capacitor/core')
   return { WatchBridge: registerPlugin('WatchBridge') }
 })().catch(() => null))
@@ -531,14 +553,19 @@ export async function startWatchSync ({ useStore, useUI }) {
         ? buildSnapshot(S, { timer: useUI.getState().timer, ready: readyFor(S) })
         : { v: SNAPSHOT_VERSION, unit: S.unit === 'lb' ? 'lb' : 'kg', active: null, ready: null }
       snap.settings = { ...settingsForWatch(prefs, healthOn), ...watchExtras(S) }
+      // The app's colours (Wear OS).
+      try { snap.theme = accentPair(accentValue(S)) } catch { /* the watch keeps its default */ }
       // With Apple Health on: the deleted workouts, so the watch removes the copies it saved.
       if (healthOn) { const gone = healthGoneFor(S); if (gone.length) snap.healthGone = gone }
       // Discarded here: the watch drops its Apple Health workout instead of saving it (#776).
       const discarded = discardedFor()
       if (discarded.length) snap.discarded = discarded
-      const json = JSON.stringify(fitSnapshot(snap))
+      const fitted = fitSnapshot(snap)
+      const json = JSON.stringify(fitted)
       if (json !== lastSent) {
-        const r = await p.WatchBridge.sendSnapshot({ json })
+        // With the phone's clock as it is sent (not part of what counts as a change), so the
+        // watch counts the rest down to the phone's own end even when the two clocks differ.
+        const r = await p.WatchBridge.sendSnapshot({ json: JSON.stringify({ ...fitted, now: Date.now() }) })
         if (r && r.sent) lastSent = json
       }
       // The workout's animations, once per workout and exercise (the native side remembers).
@@ -572,24 +599,86 @@ export async function startWatchSync ({ useStore, useUI }) {
   let offLang = () => {}
   try { offLang = onLangChange(() => schedule()) } catch { /* a test without i18n */ }
   const sub = await p.WatchBridge.addListener('watchEvent', () => { drainWatchEvents() })
+  // Heart rate from the Wear OS watch: the native side has written new samples to its file. Put
+  // into the workout once it is saved (a running one has no end to cut the samples by yet).
+  const subHr = await Promise.resolve(p.WatchBridge.addListener('watchHr', () => { mergeWatchHr() })).catch(() => null)
+  const offFinish = useStore.subscribe((s, prev) => {
+    const was = prev.S?.active?.id
+    if (was && s.S?.active?.id !== was) setTimeout(() => { mergeWatchHr() }, 1500)
+  })
   // The link itself changed (the session finished activating after launch, a watch was paired, the
   // app was installed on it): asked again, and the snapshot sent when there is a watch now.
   // Sent again even when unchanged: a reinstalled watch app starts with nothing.
   const subLink = await Promise.resolve(p.WatchBridge.addListener('watchState', () => { checkLink().then(() => { lastSent = null; schedule() }) })).catch(() => null)
-  const onVisible = () => { if (document.visibilityState === 'visible') { drainWatchEvents(); checkLink().then(() => schedule()) } }
+  const onVisible = () => { if (document.visibilityState === 'visible') { drainWatchEvents(); mergeWatchHr(); checkLink().then(() => schedule()) } }
   document.addEventListener('visibilitychange', onVisible)
+  mergeWatchHr()
   // Asked once more now that the listeners are there: the link may have come up (watchState) while
   // the first answer above was on its way, and that event had no one to hear it. Without this the
   // watch heard nothing until the app went to the background and came back.
   if (!linked) await checkLink()
   schedule()
   drainWatchEvents()
-  return () => { offStore(); offUI(); offPrefs(); offHealth(); offLang(); sub?.remove?.(); subLink?.remove?.(); document.removeEventListener('visibilitychange', onVisible); clearTimeout(tm) }
+  return () => { offStore(); offFinish(); offUI(); offPrefs(); offHealth(); offLang(); sub?.remove?.(); subLink?.remove?.(); subHr?.remove?.(); document.removeEventListener('visibilitychange', onVisible); clearTimeout(tm) }
+}
+
+/* ---------- heart rate from the Wear OS watch ---------- */
+
+// What was put into the log already, per workout: how many samples its file held then. A file
+// that grew since (samples the watch kept while it was away from the phone) is read again.
+const HR_MERGED_KEY = 'gym_watch_hr_merged'
+const HR_MERGED_MAX = 60
+const readMerged = () => { try { const v = JSON.parse(localStorage.getItem(HR_MERGED_KEY)); return v && typeof v === 'object' && !Array.isArray(v) ? v : {} } catch { return {} } }
+const writeMerged = m => {
+  const keep = Object.entries(m).sort((a, b) => (b[1].at || 0) - (a[1].at || 0)).slice(0, HR_MERGED_MAX)
+  try { localStorage.setItem(HR_MERGED_KEY, JSON.stringify(Object.fromEntries(keep))) } catch { /* read again next time */ }
+}
+
+/**
+ * Which of the native side's heart-rate files (`files`: [{ wid, n }]) are worth reading now: a
+ * workout that is saved (not the running one), and whose file holds more samples than the last
+ * time it was read (`merged`). Pure.
+ */
+export function hrFilesToMerge (files, S, merged = {}) {
+  if (!Array.isArray(files)) return []
+  const saved = new Set((S?.workouts || []).filter(w => w && w.id && w.end).map(w => w.id))
+  return files
+    .filter(f => f && typeof f.wid === 'string' && Number(f.n) > 0)
+    .filter(f => f.wid !== S?.active?.id && saved.has(f.wid))
+    .filter(f => !(Number(merged[f.wid]?.n) >= Number(f.n)))
+    .map(f => f.wid)
+}
+
+let merging = null
+/**
+ * Reads the Wear OS watch's heart rate (one file per workout on the phone, written by the native
+ * side) into the saved workouts that have one: per set and for the session (appHandlers.mergeHr,
+ * lib/health-read.js mergeHeartRate). The samples themselves stay in their file.
+ */
+export function mergeWatchHr () {
+  if (merging) return merging
+  merging = (async () => {
+    try {
+      const p = await watchPlugin()
+      if (!p || !p.WatchBridge.listHr || !getStateRef || !storeReady() || !appHandlers?.mergeHr) return []
+      const { files = [] } = (await p.WatchBridge.listHr()) || {}
+      const merged = readMerged()
+      const todo = hrFilesToMerge(files, getStateRef()?.S, merged)
+      for (const wid of todo) {
+        const { samples = [] } = (await p.WatchBridge.readHr({ wid })) || {}
+        appHandlers.mergeHr(wid, samples)
+        merged[wid] = { n: Array.isArray(samples) ? samples.length : 0, at: Date.now() }
+      }
+      if (todo.length) writeMerged(merged)
+      return todo
+    } catch { return [] } finally { merging = null }
+  })()
+  return merging
 }
 
 // Test seams.
 export function _setWatchPluginForTest (plugin, getState) { pluginP = Promise.resolve(plugin ? { WatchBridge: plugin } : null); getStateRef = getState || null }
-export function _resetWatchSync () { startedOnWatch.clear(); handlers = null; appHandlers = null; pluginP = null; getStateRef = null; draining = null }
+export function _resetWatchSync () { startedOnWatch.clear(); handlers = null; appHandlers = null; pluginP = null; getStateRef = null; draining = null; merging = null }
 
 /**
  * Writes `fields` (heart rate) onto one set: in the running session when it is that workout, else in

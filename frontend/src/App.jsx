@@ -20,6 +20,7 @@ import { installEdgeSwipeBack, BACK_PREVIEW_EVENT } from './lib/edge-swipe-back.
 import { pageMotion } from './lib/page-motion.js'
 import { startWatchSync, bindWatchAppActions, patchSetIn } from './lib/watch-sync.js'
 import { stampWorkout } from './lib/sync-merge.js'
+import { mergeHeartRate } from './lib/health-read.js'
 import { logWeighIn } from './lib/bodyweight.js'
 import { startWidgetSync } from './lib/widgets.js'
 import { startLiveActivitySync } from './lib/live-activity.js'
@@ -390,8 +391,8 @@ export default function App() {
   }, [])
   // iOS: swipe from the left edge for the page's own back button (lib/edge-swipe-back.js)
   useEffect(() => installEdgeSwipeBack(), [])
-  // iPhone app with an Apple Watch: the running workout goes to the watch, its ticks come back
-  // (lib/watch-sync.js). Nothing at all on the web, on Android, or without a paired watch.
+  // Phone app with an Apple Watch or a Wear OS watch: the running workout goes to the watch, its
+  // ticks come back (lib/watch-sync.js). Nothing at all on the web, or without a paired watch.
   useEffect(() => {
     if (!MOBILE) return
     let stop = null, gone = false
@@ -408,6 +409,11 @@ export default function App() {
       patchSet: (where, fields, opts = {}) => useStore.getState().update(s => {
         patchSetIn(s, where, fields, stampWorkout, { ...opts, recount: w => { w.vol = workoutVolume(w) } })
       }),
+      // The Wear OS watch's rest buttons move the phone's rest, as its own +15 s and Skip do.
+      restAdd: sec => useUI.getState().addRest(sec),
+      restSkip: () => useUI.getState().stopRest(),
+      // The Wear OS watch's heart rate for a saved workout: per set and for the session.
+      mergeHr: (wid, samples) => useStore.getState().update(s => { mergeHeartRate(s, wid, samples, 'wear') }),
       // Ticks from the watch are the workout screen's to apply: it opens, and drains the queue.
       openWorkout: () => { if (!String(window.location.hash || '').startsWith('#/workout')) navToWorkout() },
     })

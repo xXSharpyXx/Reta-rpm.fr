@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="no_session_title">Aucune séance en cours</string>
+    <string name="no_session_body">Lance-la sur ton téléphone : elle s’affiche ici.</string>
+    <string name="all_done_title">Toutes les séries sont faites</string>
+    <string name="all_done_body">Termine la séance sur ton téléphone.</string>
+    <string name="set_of">Série %1$d/%2$d</string>
+    <string name="warmup_of">Échauffement %1$d/%2$d</string>
+    <string name="done_button">Valider la série</string>
+    <string name="rest">Repos</string>
+    <string name="skip">Passer</string>
+    <string name="next">Ensuite : %1$s</string>
+    <string name="bodyweight">Poids du corps</string>
+    <string name="hr_off">Cardio coupé : touche pour autoriser</string>
+    <string name="notif_channel">Séance</string>
+    <string name="notif_title">Séance en cours</string>
+    <string name="notif_text">Mesure du rythme cardiaque</string>
+</resources>

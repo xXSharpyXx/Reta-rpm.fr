@@ -1,0 +1,84 @@
+// The Wear OS watch app (Galaxy Watch 4 and later, Wear OS 3+): follows the workout running on the
+// phone, ticks its sets, moves its rest, and measures the heart rate for the whole session.
+// docs/WEAR_OS.md tells how it works and how to install it.
+//
+// Kotlin and Compose live in this module only: the phone app (:app) stays plain Java, and its build
+// does not change. The Kotlin plugin is declared here, as the Capacitor plugins declare theirs.
+buildscript {
+    ext.wear_kotlin_version = '2.2.20'
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$wear_kotlin_version"
+        classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:$wear_kotlin_version"
+    }
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
+android {
+    namespace = "ch.duartesantos.opengym.wear"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        // The same applicationId as the phone app, and below the same signing key: the Wear OS
+        // Data Layer only links a watch app and a phone app that share both.
+        applicationId "ch.duartesantos.opengym"
+        minSdkVersion 30
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0"
+    }
+    // The phone's own debug key (app/build.gradle): one key for both, or the two never meet.
+    signingConfigs {
+        debug {
+            storeFile rootProject.file('app/reta-debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+    buildTypes {
+        debug {
+            // The phone's debug build is ch.duartesantos.opengym.test: so is this one.
+            applicationIdSuffix ".test"
+            signingConfig signingConfigs.debug
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+    buildFeatures {
+        compose = true
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+dependencies {
+    implementation "androidx.core:core-ktx:$androidxCoreVersion"
+    implementation "androidx.activity:activity-compose:$androidxActivityVersion"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.9.4"
+    implementation "androidx.wear.compose:compose-material:1.7.1"
+    implementation "androidx.wear.compose:compose-foundation:1.7.1"
+    // The heart rate during the workout (ExerciseClient), on the watch's own sensor.
+    implementation "androidx.health:health-services-client:1.1.0"
+    // The Data Layer between the watch and the phone, over their own link.
+    implementation "com.google.android.gms:play-services-wearable:$playServicesWearableVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2"
+    testImplementation "junit:junit:$junitVersion"
+    // The real org.json for the JVM tests (Android's own is a stub there).
+    testImplementation "org.json:json:20240303"
+}
