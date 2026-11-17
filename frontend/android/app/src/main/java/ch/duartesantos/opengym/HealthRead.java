@@ -1,6 +1,12 @@
 package ch.duartesantos.opengym;
 
+import androidx.health.connect.client.records.BasalMetabolicRateRecord;
+import androidx.health.connect.client.records.BodyFatRecord;
+import androidx.health.connect.client.records.BodyWaterMassRecord;
+import androidx.health.connect.client.records.BoneMassRecord;
 import androidx.health.connect.client.records.HeartRateRecord;
+import androidx.health.connect.client.records.HeightRecord;
+import androidx.health.connect.client.records.LeanBodyMassRecord;
 import androidx.health.connect.client.records.WeightRecord;
 import androidx.health.connect.client.records.metadata.Metadata;
 import java.time.Instant;
