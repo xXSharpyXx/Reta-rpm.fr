@@ -89,6 +89,9 @@ dependencies {
     // phone and the watch, over their own Bluetooth/Wi-Fi link, and opening the watch app.
     implementation "com.google.android.gms:play-services-wearable:$playServicesWearableVersion"
     implementation "androidx.wear:wear-remote-interactions:$wearRemoteInteractionsVersion"
+    // The future RemoteActivityHelper returns: the interface alone (wear-remote-interactions only
+    // has it at run time).
+    implementation "com.google.guava:listenablefuture:1.0"
     // The sharper animations as Play asset packs (AnimationPacksPlugin in src/play): the Play
     // build only. The sideloaded APK has no Play Store behind it and keeps its built-in ones.
     playImplementation "com.google.android.play:asset-delivery:$assetDeliveryVersion"
