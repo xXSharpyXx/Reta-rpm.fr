@@ -208,3 +208,21 @@ export function applyTemplate(routine, ex) {
   routine.ex = groupIds(ex.map(cfg => structuredClone(cfg)))
   return true
 }
+
+/**
+ * What a template change (templateChanges) amounts to, counted for the one-line question at the
+ * finish: exercises added and left out, sets added and removed over the exercises kept, and
+ * whether the order or the supersets moved.
+ */
+export function templateChangeCounts(changes) {
+  const c = changes || {}
+  let setsAdded = 0, setsRemoved = 0
+  for (const x of c.sets || []) {
+    const d = (Number(x?.to) || 0) - (Number(x?.from) || 0)
+    if (d > 0) setsAdded += d; else setsRemoved -= d
+  }
+  return {
+    added: (c.added || []).length, removed: (c.removed || []).length,
+    setsAdded, setsRemoved, reordered: !!c.reordered, supersets: !!c.supersets,
+  }
+}

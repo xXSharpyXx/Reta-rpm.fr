@@ -13,7 +13,7 @@
 //   - openGym's own records in the hub (what it wrote there itself) are never read back as new;
 //   - an imported weigh-in carries `src` and is never written back to the hub (no ping-pong:
 //     lib/health-connect.js healthRecords leaves it out).
-import { hrFromSamples, sanitizeHr } from './heart-rate.js'
+import { hrFromSamples, sanitizeHr, hrSeries, sanitizeSeries } from './heart-rate.js'
 import { stampWorkout } from './sync-merge.js'
 import { isoOf } from './format.js'
 
@@ -58,6 +58,14 @@ export function mergeHeartRate(S, wid, samples, src, now = Date.now()) {
       changed = true
     }
   }
+  // The curve for the chart (lib/heart-rate.js hrSeries): kept when there is none yet, or
+  // replaced by one with more of the session in it (a hub that synced late).
+  const series = hrSeries(w, samples)
+  if (series) {
+    const cur = sanitizeSeries(w.hrSeries)
+    const filled = x => x.v.filter(b => b != null).length
+    if (!cur || filled(series) > filled(cur)) { w.hrSeries = series; changed = true }
+  }
   if (changed) stampWorkout(w, now)
   return changed
 }
@@ -65,7 +73,7 @@ export function mergeHeartRate(S, wid, samples, src, now = Date.now()) {
 /** Whether a workout still has sets the hub could fill: one done and without a heart rate. */
 export function lacksHeartRate(w) {
   if (!w || typeof w !== 'object') return false
-  if (!w.hr) return true
+  if (!w.hr || !w.hrSeries) return true
   return (w.entries || []).some(e => (e?.sets || []).some(s => s && (s.done === true || s.sides) && !sanitizeHr(s.hr)))
 }
 

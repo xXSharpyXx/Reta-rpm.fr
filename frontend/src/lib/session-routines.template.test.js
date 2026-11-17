@@ -67,3 +67,15 @@ describe('applyTemplate', () => {
     expect(r).toMatchObject({ id: 'r1', name: 'Push', prog: 'double' })
   })
 })
+
+describe('templateChangeCounts', () => {
+  it('counts what the finish question says', async () => {
+    const { templateChangeCounts } = await import('./session-routines.js')
+    expect(templateChangeCounts({
+      added: ['a'], removed: ['b', 'c'],
+      sets: [{ id: 'd', from: 3, to: 4 }, { id: 'e', from: 4, to: 2 }],
+      reordered: true, supersets: false,
+    })).toEqual({ added: 1, removed: 2, setsAdded: 1, setsRemoved: 2, reordered: true, supersets: false })
+    expect(templateChangeCounts(null)).toEqual({ added: 0, removed: 0, setsAdded: 0, setsRemoved: 0, reordered: false, supersets: false })
+  })
+})

@@ -100,83 +100,34 @@ describe('workout detail', () => {
     expect(history.textContent).toContain('60×5')
   })
 
-  it('copies the workout as text, with the note as it stands in the box', async () => {
-    const writeText = vi.fn(() => Promise.resolve())
-    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
-    const w = workout([{ id: lifts[0], target: { mode: 'reps' }, sets: [done(60, 5, { phase: 'warmup' }), done(80, 5)] }])
-    useStore.setState(s => ({ S: { ...s.S, workouts: [w] } }))
-    workoutDetailSheet(w)
-    const host = mountTopSheet()
-    const note = host.querySelector('textarea')
-    act(() => {
-      Object.getOwnPropertyDescriptor(note.constructor.prototype, 'value').set.call(note, 'Good day')
-      note.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-    await act(async () => { button(host, 'Copy as text').click() })
-    expect(writeText).toHaveBeenCalledTimes(1)
-    const text = writeText.mock.calls[0][0]
-    expect(text.split('\n')[0]).toMatch(/^Push · /)
-    expect(text).toContain('\n80×5\n')
-    expect(text).not.toContain('60×5')
-    expect(text.endsWith('\n\nGood day')).toBe(true)
-    expect(toast).toHaveBeenCalledWith('Copied')
-  })
-
   // One rule for both: a superset paired across two routines of a combined session is shown apart
   // in the sheet, each under its own routine, and the copied text does not call it a superset.
-  it('groups a combined session\'s supersets the same way in the sheet and in the copied text', async () => {
-    const writeText = vi.fn(() => Promise.resolve())
-    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
-    const w = workout([
-      { id: lifts[0], rid: 'A', sg: 'x', target: { mode: 'reps' }, sets: [done(40, 10)] },
-      { id: lifts[1], rid: 'B', sg: 'x', target: { mode: 'reps' }, sets: [done(20, 12)] },
-      { id: lifts[2], rid: 'B', target: { mode: 'reps' }, sets: [done(60, 5)] },
-    ], { routineIds: ['A', 'B'] })
-    useStore.setState(s => ({ S: { ...s.S, workouts: [w] } }))
-    workoutDetailSheet(w)
-    const host = mountTopSheet()
-    expect(host.querySelector('.wd-ss')).toBeNull()
-    expect(host.querySelectorAll('.wsum-ex')).toHaveLength(3)
-    await act(async () => { button(host, 'Copy as text').click() })
-    expect(writeText.mock.calls[0][0]).not.toContain('Superset')
-  })
-
-  it('says so when the clipboard refuses', async () => {
-    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText: () => Promise.reject(new Error('denied')) } })
-    document.execCommand = () => false
-    workoutDetailSheet(workout([{ id: lifts[0], target: { mode: 'reps' }, sets: [done(60, 5)] }]))
-    const host = mountTopSheet()
-    await act(async () => { button(host, 'Copy as text').click() })
-    expect(toast).toHaveBeenCalledWith('Could not copy')
-    delete document.execCommand
-  })
 })
 
-// #447: the workout as a Garmin .fit activity, saved as a download in the browser.
-describe('export as .fit', () => {
-  it('saves the saved record as a .fit file named after its day and time', async () => {
-    const blobs = []
-    const createObjectURL = vi.fn(blob => { blobs.push(blob); return 'blob:fit' })
-    vi.stubGlobal('URL', Object.assign(Object.create(URL), { createObjectURL, revokeObjectURL: vi.fn() }))
-    const clicked = []
-    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () { clicked.push(this.download) })
-    const w = workout([{ id: lifts[0], target: { mode: 'reps' }, sets: [done(60, 5), done(60, 5)] }])
-    useStore.setState(s => ({ S: { ...s.S, workouts: [w] } }))
+// Owner, 2026-11-17: three actions only, and no empty photo block on a read-only sheet.
+describe('workout detail actions', () => {
+  it('offers edit, save as routine and delete, nothing else', () => {
+    const w = workout([{ id: lifts[0], target: { mode: 'reps' }, sets: [done(60, 5)] }])
+    useStore.setState(st => ({ S: { ...st.S, workouts: [w] } }))
     workoutDetailSheet(w)
     const host = mountTopSheet()
-    await act(async () => { button(host, 'Export as .fit file').click() })
-    expect(clicked).toHaveLength(1)
-    expect(clicked[0]).toMatch(/^opengym-2026-09-15-\d{4}\.fit$/)
-    const bytes = new Uint8Array(await blobs[0].arrayBuffer())
-    expect(String.fromCharCode(...bytes.slice(8, 12))).toBe('.FIT')
-    expect(toast).toHaveBeenCalledWith('Saved. Garmin Connect can take it from here.')
-    click.mockRestore()
+    const labels = [...host.querySelectorAll('button')].map(b => b.textContent.trim()).filter(Boolean)
+    expect(labels).toEqual(expect.arrayContaining(['Edit workout', 'Save as routine', 'Delete workout']))
+    for (const gone of ['Repeat today', 'Change date & time', 'Change duration', 'Copy as text', 'Share as image', 'Save as PDF', 'Export as .fit file']) {
+      expect(labels).not.toContain(gone)
+    }
+    expect(host.querySelector('.wmedia')).toBeNull()
   })
 
-  it('says so when the workout cannot be written', async () => {
-    workoutDetailSheet({ id: 'x', name: 'Nowhen', entries: [], prs: [] })
+  it('shows the heart rate as one curve, not beside every set', () => {
+    const start = new Date(2026, 8, 15, 17).getTime()
+    const w = workout([{ id: lifts[0], target: { mode: 'reps' }, sets: [done(60, 5, { hr: { avg: 120, max: 130 } })] }],
+      { hr: { avg: 119, max: 145, src: 'hc', n: 400 }, hrSeries: { t0: start, dt: 15, v: [100, 110, 140, null, 120] } })
+    useStore.setState(st => ({ S: { ...st.S, workouts: [w] } }))
+    workoutDetailSheet(w)
     const host = mountTopSheet()
-    await act(async () => { button(host, 'Export as .fit file').click() })
-    expect(toast).toHaveBeenCalledWith('Could not create the file')
+    expect(host.querySelector('[data-hr-card]').textContent).toContain('119')
+    expect(host.querySelector('svg.hrc')).toBeTruthy()
+    expect(host.querySelector('.wsum-sets').textContent).not.toContain('♥')
   })
 })

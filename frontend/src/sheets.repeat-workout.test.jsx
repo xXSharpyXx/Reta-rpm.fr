@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
-// "Repeat today" in a saved workout's sheet (#58): a new freestyle session dated today, seeded
+// Repeating a saved workout (#58; no longer offered from its sheet since 2026-11-17): a new freestyle session dated today, seeded
 // from this workout; the record itself is left as it is.
 import React, { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createRoot } from 'react-dom/client'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
-import { workoutDetailSheet } from './sheets.jsx'
+import { repeatWorkout } from './sheets.jsx'
 import { setNav } from './lib/nav.js'
 import { EXDB } from './lib/exercises.js'
 import { todayISO } from './lib/format.js'
@@ -49,8 +49,7 @@ describe('WorkoutDetail — repeat today', () => {
   it('starts a freestyle session today from this workout and leaves the record alone', () => {
     const saved = workout()
     useStore.setState(s => ({ S: { ...s.S, workouts: [saved] } }))
-    const host = (workoutDetailSheet(saved), renderTop())
-    act(() => { button(host, 'Repeat today').click() })
+    act(() => { repeatWorkout(saved, () => {}) })
     const active = useStore.getState().S.active
     expect(active).toMatchObject({ d: todayISO(), routineIds: [], name: 'Push', cur: 0, bw: null })
     expect(active.entries.map(e => e.id)).toEqual([A, B])
@@ -64,17 +63,10 @@ describe('WorkoutDetail — repeat today', () => {
   it('asks for the weigh-in first when that is on', () => {
     const saved = workout()
     useStore.setState(s => ({ S: { ...s.S, workouts: [saved], weighIn: true } }))
-    const host = (workoutDetailSheet(saved), renderTop())
-    act(() => { button(host, 'Repeat today').click() })
+    act(() => { repeatWorkout(saved, () => {}) })
     expect(useStore.getState().S.active).toBeNull()
     expect(useUI.getState().sheets.length).toBe(1)
     expect(navigated).toBeNull()
   })
-
-  it('is disabled while a workout is running', () => {
-    const saved = workout()
-    useStore.setState(s => ({ S: { ...s.S, workouts: [saved], active: { id: 'x', d: todayISO(), start: 1, entries: [] } } }))
-    const host = (workoutDetailSheet(saved), renderTop())
-    expect(button(host, 'Repeat today').disabled).toBe(true)
-  })
 })
+

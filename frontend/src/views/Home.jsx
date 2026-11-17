@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { effectiveRoutines, effectiveRoutineIds, nextTrainingDay, streakWeeks, lastBW, setsDoneActive, workoutDay } from '../lib/history.js'
-import { fmtNum, fmtDate, todayISO, isoOf, weekStartOf, weekDayOffset, durPart, DAYS, DAYN } from '../lib/format.js'
+import { effectiveRoutines, effectiveRoutineIds, nextTrainingDay, streakWeeks, lastBW, setsDoneActive, workoutDay, sessionVolume } from '../lib/history.js'
+import { fmtNum, fmtVol, fmtDate, todayISO, isoOf, weekStartOf, weekDayOffset, durPart, DAYS, DAYN } from '../lib/format.js'
 import { t, tn, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, starterPlanSheet, bwDeltaColor, weighInsSheet, workoutDetailSheet, exerciseHistorySheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
@@ -20,7 +20,11 @@ import WeightRate from '../components/WeightRate.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 import { APP_NAME } from '../lib/brand.js'
 import { isSimple } from '../lib/simple.js'
-import { WorkoutExercises } from '../components/WorkoutSummary.jsx'
+import { avgBpmOf } from '../components/HeartRate.jsx'
+import { Thumb } from '../components/Media.jsx'
+import { EXIDX } from '../lib/exercises.js'
+import { isWarmupRow } from '../lib/workout-model.js'
+import { exerciseNameFor, exerciseNameClass } from '../lib/i18n.js'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
@@ -108,7 +112,7 @@ export default function Home() {
       </div>}
       {/* The day picked on the week (today by default): what was trained on it, each session
           with its name, date and duration, and "See more" opening its exercises in place. */}
-      <DayWorkouts S={S} iso={selDay} next={selDay === todayISO() && !S.active ? next : null} />
+      <DayWorkouts S={S} iso={selDay} who={user?.name || ''} next={selDay === todayISO() && !S.active ? next : null} />
       <SeasonDeco spot="home-hero" />
     </div>
 
@@ -195,30 +199,54 @@ export default function Home() {
   </div>
 }
 
-/* The workouts of one day, under the week strip. Each one: its name in bold, the date and the
-   duration in smaller type, and "See more" opening its exercises right here (the same read-back
-   as everywhere else, components/WorkoutSummary.jsx). Tapping the name opens the full sheet, where
-   the workout can be edited or given photos and a note. */
-function DayWorkouts({ S, iso, next }) {
+/* The workouts of one day, under the week strip, each as a card (owner, 2026-11-17): who and
+   when, the name, a line with the time, the volume, the records and the average heart rate, then
+   the first three exercises with their set counts and "See N more" for the rest. Tapping the card
+   opens the full sheet, where the workout can be edited, kept as a routine or deleted. */
+const DAY_EX_SHOWN = 3
+const doneSets = e => (e?.sets || []).filter(s => s && (s.done || s.sides) && !isWarmupRow(s)).length
+function DayWorkoutCard({ S, w, who }) {
+  const [open, setOpen] = useState(false)
+  const entries = (w.entries || []).filter(e => e && doneSets(e) > 0)
+  const shown = open ? entries : entries.slice(0, DAY_EX_SHOWN)
+  const extra = entries.length - DAY_EX_SHOWN
+  const bpm = avgBpmOf(w)
+  const prN = (w.prs || []).length
+  const dur = durPart((w.end || w.start) - w.start)[0]
+  return <div className="dayw-item dayw-card">
+    <div className="dayw-head" {...tappable(() => workoutDetailSheet(w))}>
+      <div className="dayw-who">
+        {who && <div className="dayw-user">{who}</div>}
+        <div className="dayw-meta">{fmtDate(w.d, true, true)}</div>
+      </div>
+      <div className="dayw-name">{w.name || t('Workout')}</div>
+      <div className="dayw-stats">
+        {dur && <div><div className="l">{t('Time')}</div><div className="v">{dur}</div></div>}
+        <div><div className="l">{t('Volume')}</div><div className="v">{fmtVol(sessionVolume(w, S), S.unit)}</div></div>
+        <div><div className="l">{t('Records')}</div><div className="v"><Icon name="trophy" style={{ color: 'var(--yellow)' }} />{prN}</div></div>
+        {bpm != null && <div><div className="l">{t('Avg. bpm')}</div><div className="v"><Icon name="heart" style={{ color: 'var(--red)' }} />{bpm}</div></div>}
+      </div>
+      <div className="dayw-ex">{shown.map((e, i) => {
+        const ex = EXIDX[e.id]
+        return <div key={i} className="dayw-exrow">
+          {ex ? <Thumb ex={ex} /> : <span className="thumb" />}
+          <span className="grow">{tn('{0} set', '{0} sets', doneSets(e))} <span className={exerciseNameClass(ex)}>{ex ? exerciseNameFor(ex) : (e.n || e.id)}</span></span>
+        </div>
+      })}</div>
+    </div>
+    {extra > 0 && <button type="button" className="dayw-more" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+      {open ? t('See less') : tn('See {0} more exercise', 'See {0} more exercises', extra)}
+    </button>}
+  </div>
+}
+
+function DayWorkouts({ S, iso, next, who }) {
   const ws = S.workouts.filter(w => (workoutDay(w) || w.d) === iso)
-  const [open, setOpen] = useState({})
   const label = iso === todayISO() ? t('Today') : fmtDate(iso, true)
   return <div className="dayw" data-day={iso}>
     <div className="dayw-lbl">{label}</div>
-    {ws.length ? ws.map((w, i) => {
-      const key = w.id || i
-      const isOpen = !!open[key]
-      return <div key={key} className="dayw-item">
-        <div className="dayw-head" {...tappable(() => workoutDetailSheet(w))}>
-          <div className="dayw-name">{w.name || t('Workout')}</div>
-          <div className="dayw-meta">{[fmtDate(w.d, true), ...durPart((w.end || w.start) - w.start)].join(' · ')}</div>
-        </div>
-        <button type="button" className="dayw-more" aria-expanded={isOpen} onClick={() => setOpen(o => ({ ...o, [key]: !o[key] }))}>
-          {t(isOpen ? 'See less' : 'See more')}<Icon name={isOpen ? 'chevronUp' : 'chevronDown'} />
-        </button>
-        {isOpen && <WorkoutExercises w={w} onExercise={exerciseHistorySheet} />}
-      </div>
-    }) : <div className="dayw-empty">
+    {ws.length ? ws.map((w, i) => <DayWorkoutCard key={w.id || i} S={S} w={w} who={who} />)
+      : <div className="dayw-empty">
       <div className="muted">{t('No workout this day')}</div>
       {next && <div className="small dim">{t('Next session: {0}, {1}', t(DAYN[next.weekday]), next.routine.name)}</div>}
       <button type="button" className="plan-textbtn dayw-plan" onClick={() => dayOverrideSheet(iso)}>{t('Plan this day')}</button>

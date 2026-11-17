@@ -49,16 +49,6 @@ describe('changing the date of a saved workout', () => {
   })
   afterEach(unmountAll)
 
-  it('is offered from the workout detail sheet and opens prefilled', () => {
-    const host = render(() => workoutDetailSheet(history()[1]))
-    const open = button(host, 'Change date & time')
-    expect(open).toBeTruthy()
-    const edit = render(() => open.click())
-    expect(edit.querySelector('h3').textContent).toBe('Change date & time')
-    expect(edit.querySelector('input[type=date]').value).toBe('2026-08-25')
-    expect(edit.querySelector('input[type=time]').value).toBe('07:30')
-  })
-
   it('moves the session, keeps the length it had and re-files it in date order', () => {
     const host = render(() => workoutDateSheet(history()[1]))
     act(() => { type(host.querySelector('input[type=date]'), '2026-08-18') })
@@ -142,16 +132,6 @@ describe('changing the date of a saved workout', () => {
 
   // The note field only writes on blur, and moving a legacy record re-keys it — so a note
   // typed and left focused has to be flushed before the move, not after it.
-  it('keeps a note typed but never blurred', () => {
-    const host = render(() => workoutDetailSheet(history()[1]))
-    act(() => { type(host.querySelector('textarea'), 'felt strong') })
-    const edit = render(() => button(host, 'Change date & time').click())
-    act(() => { type(edit.querySelector('input[type=date]'), '2026-08-18') })
-    act(() => { button(edit, 'Save').click() })
-    unmountAll()
-    expect(history().find(w => w.id === 'late').note).toBe('felt strong')
-  })
-
   it('a record written before ids keeps one identity for sync', () => {
     const legacy = { d: '2026-08-25', start: 1767636000000, end: 1767639600000, name: 'Old', vol: 0, entries: [], prs: [] }
     setHistory([legacy])
@@ -210,15 +190,6 @@ describe('changing the duration of a saved workout', () => {
     ])
   })
   afterEach(unmountAll)
-
-  it('is offered from the workout detail sheet and opens at the length it has', () => {
-    const host = render(() => workoutDetailSheet(history()[1]))
-    const open = button(host, 'Change duration')
-    expect(open).toBeTruthy()
-    const edit = render(() => open.click())
-    expect(edit.querySelector('h3').textContent).toBe('Change duration')
-    expect(edit.querySelector('input.num').value).toBe('300')
-  })
 
   it('shortens the session from its start and leaves everything else as it was', () => {
     const before = history()[1]
@@ -299,15 +270,4 @@ describe('changing the duration of a saved workout', () => {
     expect(useUI.getState().sheets).toHaveLength(0)
   })
 
-  it('keeps a note typed in the detail sheet but never blurred', () => {
-    const host = render(() => workoutDetailSheet(history()[1]))
-    act(() => { type(host.querySelector('textarea'), 'forgot to stop') })
-    const edit = render(() => button(host, 'Change duration').click())
-    act(() => { type(edit.querySelector('input.num'), '60') })
-    act(() => { button(edit, 'Save').click() })
-    unmountAll()
-    const saved = history().find(w => w.id === 'forgot')
-    expect(saved.note).toBe('forgot to stop')
-    expect(saved.end - saved.start).toBe(60 * 60000)
-  })
 })

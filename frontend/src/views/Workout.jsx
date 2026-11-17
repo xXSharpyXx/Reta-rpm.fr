@@ -45,6 +45,8 @@ import { markAllSetsDone, sessionHistory } from '../lib/backfill.js'
 import { bindWatchActions, markDiscarded } from '../lib/watch-sync.js'
 import { bestSetFor } from '../lib/exercise-history.js'
 import { gymHistory, gymNameOf } from '../lib/gyms.js'
+import { editedRecord } from '../lib/session-edit.js'
+import WorkoutMediaSection from '../components/WorkoutMedia.jsx'
 import { isSimple } from '../lib/simple.js'
 import { bindLiveActions } from '../lib/live-activity.js'
 import { isWarmupRow, isFailureSet, isDropSet, isRestPauseSet, dropsOf, clustersOf, addDrop, addCluster, removeDropAt, removeClusterAt, setDropAt, setClusterAt, nextDropWeight, nextBurstReps, isSideSet, makeSideSet, setSideField, toggleSide, addSideDrop, removeSideDropAt, setSideDropAt, addSideCluster, removeSideClusterAt, setSideClusterAt, WEIGHT_ORIGIN_MANUAL } from '../lib/workout-model.js'
@@ -2308,6 +2310,9 @@ function ActiveWorkout() {
     {!listMode && <div style={{ height: 10 }} />}
     {wc.exerciseButtons && listMode && A.entries.length > 0 && <div className="muted small" style={{ marginBottom: 6 }}>{t('Move, swap and remove below act on the exercise marked {0}.', t('Current'))}</div>}
     <Button onClick={addExercise} icon="plus">{t('Add exercise')}</Button>
+    {/* Editing a saved workout is where its photos and videos are added now: the detail sheet
+        only shows them once there are some. They go straight onto the saved record. */}
+    {editing && editedRecord(S) && <div style={{ marginTop: 14 }}><WorkoutMediaSection w={editedRecord(S)} hint /></div>}
     {wc.exerciseButtons && A.entries.length > 0 && <>
       <div style={{ height: 6 }} />
       <div className="row">

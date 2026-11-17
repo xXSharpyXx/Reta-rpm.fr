@@ -53,29 +53,36 @@ describe('Home — the picked day', () => {
     expect(panel().dataset.day).toBe(todayISO())
     expect(host.querySelector('.wday.today').classList.contains('sel')).toBe(true)
     expect(names()).toEqual(['Push Day'])
-    expect(host.querySelector('.dayw-meta').textContent).toContain('45 min')
+    expect(host.querySelector('.dayw-stats').textContent).toContain('45 min')
+    expect(host.querySelector('.dayw-stats').textContent).toContain('870 kg')
   })
 
-  it('opens the exercises in place with See more, and folds them with See less', () => {
+  it('lists three exercises with their sets, and See N more opens the rest in place', () => {
+    const ids = ['0025', '0001', '0002', '0003', '0004']
+    setS({ workouts: [workout(todayISO(), 'Push Day', { entries: ids.map(id => ({ id, target: { mode: 'reps' }, sets: [{ w: 60, r: 8, done: true }, { w: 65, r: 6, done: true }] })) })] })
+    mount()
+    expect(host.querySelectorAll('.dayw-exrow')).toHaveLength(3)
+    expect(host.querySelector('.dayw-exrow').textContent).toMatch(/^2 sets /)
+    const more = host.querySelector('.dayw-more')
+    expect(more.textContent).toBe('See 2 more exercises')
+    click(more)
+    expect(host.querySelectorAll('.dayw-exrow')).toHaveLength(5)
+    expect(more.textContent).toBe('See less')
+    expect(nav).not.toHaveBeenCalled()
+    expect(workoutDetailSheet).not.toHaveBeenCalled()
+  })
+
+  it('has no See more for three exercises or fewer', () => {
     setS({ workouts: [workout(todayISO(), 'Push Day')] })
     mount()
-    const more = host.querySelector('.dayw-more')
-    expect(more.textContent).toBe('See more')
-    expect(host.querySelector('.wsum-ex')).toBeNull()
-    click(more)
-    expect(more.getAttribute('aria-expanded')).toBe('true')
-    expect(more.textContent).toBe('See less')
-    expect(host.querySelectorAll('.wsum-sets tbody tr')).toHaveLength(2)
-    expect(nav).not.toHaveBeenCalled()
-    click(more)
-    expect(host.querySelector('.wsum-ex')).toBeNull()
+    expect(host.querySelector('.dayw-more')).toBeNull()
   })
 
   it('lists every session of a day, one under the other', () => {
     setS({ workouts: [workout(todayISO(), 'Morning'), workout(todayISO(), 'Evening')] })
     mount()
     expect(names()).toEqual(['Morning', 'Evening'])
-    expect(host.querySelectorAll('.dayw-more')).toHaveLength(2)
+    expect(host.querySelectorAll('.dayw-card')).toHaveLength(2)
   })
 
   it('a tap on another day shows that day, and says so when nothing was done', () => {

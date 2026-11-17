@@ -154,3 +154,88 @@ export function hrFromSamples(w, samples) {
   })
   return out
 }
+
+/* ------------------------------------------------------- the session's curve, for the chart -- */
+//
+// The per-set readings above say little about how a session went as a whole; the chart on a
+// finished workout (components/HeartRateChart.jsx) wants the curve itself. The samples stay in
+// the hub (or the watch's file), so a compact copy goes with the workout:
+//
+//   hrSeries  { t0, dt, v }  t0: ms of the first bucket (the workout's start), dt: seconds per
+//                            bucket, v: the average bpm of each bucket, null where none fell
+//
+// At most SERIES_MAX buckets, never shorter than SERIES_MIN_DT seconds: a 90 minute session is
+// 360 numbers, a few hundred bytes in the synced profile.
+const SERIES_MAX = 360
+const SERIES_MIN_DT = 15
+
+/** The curve of workout `w` from the hub's samples, or null with fewer than two buckets filled. */
+export function hrSeries(w, samples) {
+  const start = Number(w?.start), end = Number(w?.end)
+  if (!(start > 0) || !(end > start)) return null
+  const span = (end - start) / 1000
+  const dt = Math.max(SERIES_MIN_DT, Math.ceil(span / SERIES_MAX / 5) * 5)
+  const n = Math.max(1, Math.ceil(span / dt))
+  const sum = new Array(n).fill(0), cnt = new Array(n).fill(0)
+  for (const [t, bpm] of cleanSamples(samples)) {
+    if (t < start || t > end) continue
+    const i = Math.min(n - 1, Math.floor((t - start) / 1000 / dt))
+    sum[i] += bpm; cnt[i]++
+  }
+  const v = sum.map((s, i) => (cnt[i] ? Math.round(s / cnt[i]) : null))
+  return v.filter(x => x != null).length >= 2 ? { t0: start, dt, v } : null
+}
+
+/** A stored curve as it can be trusted (a hand-edited backup, an older build), or null. */
+export function sanitizeSeries(s) {
+  if (!s || typeof s !== 'object' || !Array.isArray(s.v)) return null
+  const t0 = Number(s.t0), dt = Number(s.dt)
+  if (!(t0 > 0) || !(dt > 0)) return null
+  const v = s.v.slice(0, SERIES_MAX * 4).map(x => (x == null ? null : Math.round(Number(x))))
+    .map(x => (x != null && x >= BPM_MIN && x <= BPM_MAX ? x : null))
+  return v.filter(x => x != null).length >= 2 ? { t0, dt, v } : null
+}
+
+/** The filled points of a curve: [{ s (seconds from its start), bpm }]. */
+export function seriesPoints(s) {
+  const c = sanitizeSeries(s)
+  if (!c) return []
+  const out = []
+  c.v.forEach((bpm, i) => { if (bpm != null) out.push({ s: i * c.dt + c.dt / 2, bpm }) })
+  return out
+}
+
+/** { avg, min, max } over the curve's points, or null. */
+export function seriesStats(s) {
+  const pts = seriesPoints(s)
+  if (!pts.length) return null
+  let sum = 0, min = Infinity, max = 0
+  for (const p of pts) { sum += p.bpm; if (p.bpm < min) min = p.bpm; if (p.bpm > max) max = p.bpm }
+  return { avg: Math.round(sum / pts.length), min, max }
+}
+
+/**
+ * The exercise being done `ms` into workout `w`: the entry of the first set ticked at or after
+ * that moment (a set ends at its tick), else the last one ticked. Null without ticks.
+ */
+export function entryAt(w, ms) {
+  const at = Number(w?.start) + ms
+  const items = tickedSets(w)
+  if (!items.length || !Number.isFinite(at)) return null
+  const hit = items.find(x => x.tick >= at) || items[items.length - 1]
+  return Number(hit.key.split(':')[0])
+}
+
+/** Where each exercise was first ticked, ms from the start: [{ ei, ms }], in order, one per entry. */
+export function entryMarks(w) {
+  const start = Number(w?.start)
+  if (!(start > 0)) return []
+  const seen = new Set(), out = []
+  for (const x of tickedSets(w)) {
+    const ei = Number(x.key.split(':')[0])
+    if (seen.has(ei)) continue
+    seen.add(ei)
+    out.push({ ei, ms: Math.max(0, x.tick - x.len - start) })
+  }
+  return out
+}

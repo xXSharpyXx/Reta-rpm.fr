@@ -47,34 +47,39 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
+// Save on the summary, then one dialog per routine whose template the workout differs from.
+async function finishAndSave() {
+  act(() => finishWorkoutNow())
+  renderTopSheet()
+  await settle()
+  act(() => button('Save').click())
+  renderTopSheet()
+}
+
 describe("finish summary: the workout as the routine's template", () => {
-  it('offers it when the workout differs, and one tap makes it the template', async () => {
+  it('asks once Save is tapped, and Update routine makes it the template', async () => {
     install([clone(bench), clone(raise)])
-    act(() => finishWorkoutNow())
-    renderTopSheet()
-    await settle()
+    await finishAndSave()
     const box = host.querySelector('[data-template-choice]')
     expect(box).toBeTruthy()
-    expect(box.textContent).toContain('Use this workout as the template for “Push A”?')
-    expect(box.querySelectorAll('.tpl-lines li')).toHaveLength(1)   // one exercise added
+    expect(box.textContent).toContain('Update “Push A”')
+    expect(box.textContent).toContain('Compared with the routine: 1 exercise added.')
     // Nothing changed yet: the offer is only an offer.
     expect(S().routines[0].ex.map(x => x.id)).toEqual(['0025'])
-    act(() => button('Use this workout as the template').click())
+    act(() => button('Update routine').click())
     expect(S().routines[0].ex.map(x => [x.id, x.sets])).toEqual([['0025', 1], ['0334', 2]])
     // The bench keeps its own slot: the routine's weight, not today's.
     expect(S().routines[0].ex[0]).toMatchObject({ reps: 5, weight: 60 })
     expect(S().routines[0].ex[1].rid).toBeUndefined()
-    expect(host.textContent).toContain('“Push A” now follows this workout')
+    expect(useUI.getState().sheets).toHaveLength(0)
   })
 
   it('keeps the template as it was on the other button', async () => {
     install([clone(bench), clone(raise)])
-    act(() => finishWorkoutNow())
-    renderTopSheet()
-    await settle()
-    act(() => button('Keep the current template').click())
+    await finishAndSave()
+    act(() => button('Keep original routine').click())
     expect(S().routines[0].ex.map(x => x.id)).toEqual(['0025'])
-    expect(host.textContent).toContain('“Push A” stays as it was')
+    expect(useUI.getState().sheets).toHaveLength(0)
   })
 
   it('says nothing when the workout was the template', async () => {
@@ -82,14 +87,30 @@ describe("finish summary: the workout as the routine's template", () => {
     act(() => finishWorkoutNow())
     renderTopSheet()
     await settle()
-    expect(host.querySelector('[data-template-choice]')).toBeNull()
+    act(() => button('Save').click())
+    expect(useUI.getState().sheets).toHaveLength(0)
   })
 
   it('counts the sets done: one more set is a change to offer', async () => {
     install([{ ...clone(bench), sets: [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: true }] }])
+    await finishAndSave()
+    expect(host.querySelector('[data-template-choice]').textContent).toContain('1 set added')
+  })
+
+  it('keeps the note and the gym typed on the summary', async () => {
+    install([clone(bench)])
     act(() => finishWorkoutNow())
     renderTopSheet()
     await settle()
-    expect(host.querySelector('.tpl-lines').textContent).toMatch(/2 sets instead of 1/)
+    const note = host.querySelector('textarea')
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(note, 'felt strong')
+      note.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    expect(host.textContent).toContain('Duration')
+    expect(host.textContent).toContain('Volume')
+    expect(host.textContent).toContain('Gym')
+    act(() => button('Save').click())
+    expect(S().workouts.at(-1).note).toBe('felt strong')
   })
 })

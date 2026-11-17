@@ -54,7 +54,8 @@ import { clampIncline, inclineFits, INCLINE_MAX, INCLINE_STEP } from './lib/incl
 import { buildCompletedWorkout, sessionEnd } from './lib/finish-workout.js'
 import { isWarmupRow, hasCompletedWork } from './lib/workout-model.js'
 import { ownExerciseRest } from './lib/supersetFlow.js'
-import { saveSessionAsRoutine, templateChanges, applyTemplate } from './lib/session-routines.js'
+import { saveSessionAsRoutine, templateChanges, applyTemplate, templateChangeCounts } from './lib/session-routines.js'
+import { cleanPlace, placeOf, placesOf, PLACE_MAX } from './lib/workout-place.js'
 import { repeatSessionEntries } from './lib/session-repeat.js'
 import { swapActiveExercise } from './lib/active-exercise-swap.js'
 import { useSheetKeyboard, useRevealActiveChip, tappable } from './lib/use-sheet-keyboard.js'
@@ -2810,35 +2811,13 @@ function WorkoutDetail({ w, close }) {
       stampWorkout(rec)
     })
   }, [])
-  const nameOf = e => (EXIDX[e.id] ? exerciseNameFor(EXIDX[e.id]) : (e.n || e.id))
-  // Copied with the note as it stands in the box, which may not be saved yet.
-  const copyAsText = async () => {
-    const rec = { ...(st.workouts.find(x => sameWorkout(x, w)) || w), note: note.trim() }
-    toast(await copyText(workoutText(rec, { unit: st.unit, nameOf, speedUnit: speedUnitOf(st), warmups: countsWarmups(st) })) ? t('Copied') : t('Could not copy'))
-  }
-  // A Garmin .fit activity (#447) of the saved record, for Garmin Connect's Import Data.
-  const exportFit = () => {
-    const rec = st.workouts.find(x => sameWorkout(x, w)) || w
-    let bytes
-    try { bytes = workoutFit(rec, { unit: st.unit, version: __APP_VERSION__ }) }
-    catch (e) { toast(t('Could not create the file')); return }
-    saveFitFile(new Blob([bytes], { type: 'application/vnd.ant.fit' }), fitFileName(rec))
-  }
-  const saveAsPdf = () => {
-    saveNote()
-    const rec = { ...(st.workouts.find(x => sameWorkout(x, w)) || w), note: note.trim() }
-    printWorkout(st, rec, { owner: useStore.getState().user?.name || '' })
-  }
-  const shareAsImage = () => {
-    const rec = st.workouts.find(x => sameWorkout(x, w)) || w
-    ui().openSheet(c2 => <ShareWorkoutImage w={rec} nameOf={nameOf} close={c2} />)
-  }
   // The name, the meta line and the exercises: the read-back every screen shares
   // (components/WorkoutSummary.jsx). Tapping an exercise opens its history.
   return <>
     <WorkoutSummary w={w} withBw onExercise={id => exerciseHistorySheet(id)} />
-    {/* Progress photos and form-check videos: added and removed right here, on the saved record. */}
-    <WorkoutMediaSection w={w} />
+    {/* Progress photos and form-check videos: shown when the workout has some. The empty Add
+        block is left out of this read-only view; the finish screen and the editor still offer it. */}
+    <WorkoutMediaSection w={w} hideEmpty />
     <div className="small muted" style={{ margin: '4px 0 6px' }}>{t('Session note')}</div>
     <textarea ref={noteRef} className="input" rows={2} maxLength={NOTE_MAX} value={note}
       placeholder={t('How the session went as a whole.')}
@@ -2854,25 +2833,8 @@ function WorkoutDetail({ w, close }) {
       catch (error) { toast(t(error.message)) }
     }}>{t('Edit workout')}</Button>
     <div style={{ height: 8 }} />
-    {/* The same exercises again, today, as a new session (#58): the rows read what was logged
-        in this workout. The record itself stays as it is. */}
-    <Button icon="reset" disabled={!!st.active} style={{ marginBottom: 8 }} onClick={() => {
-      saveNote()
-      initial.current = latest.current.trim().slice(0, NOTE_MAX)
-      repeatWorkout(w, close)
-    }}>{t('Repeat today')}</Button>
-    {/* The note lives in a textarea that only writes on blur, and moving the workout re-keys a
-        legacy record — so flush it first and stop the unmount hook writing it a second time. */}
-    <Button icon="calendar" style={{ marginBottom: 8 }} onClick={() => {
-      saveNote()
-      initial.current = latest.current.trim().slice(0, NOTE_MAX)
-      workoutDateSheet(w, close)
-    }}>{t('Change date & time')}</Button>
-    <Button icon="stopwatch" style={{ marginBottom: 8 }} onClick={() => {
-      saveNote()
-      initial.current = latest.current.trim().slice(0, NOTE_MAX)
-      workoutDurationSheet(w, close)
-    }}>{t('Change duration')}</Button>
+    {/* Three actions only (owner, 2026-11-17): edit, save as a routine, delete. Repeat, the date,
+        the duration, copy, image, PDF and .fit left this sheet. */}
     <Button icon="plus" onClick={() => confirmSheet({
       title: t('Save as routine?'),
       message: t('Create an independent routine from these exercise targets. Your workout history is kept.'),
@@ -2885,15 +2847,6 @@ function WorkoutDetail({ w, close }) {
         nav('/plan/r/' + id)
       }
     })}>{t('Save as routine')}</Button>
-    <div style={{ height: 8 }} />
-    <Button icon="copy" onClick={copyAsText}>{t('Copy as text')}</Button>
-    <div style={{ height: 8 }} />
-    <Button icon="share" onClick={shareAsImage}>{t('Share as image')}</Button>
-    <div style={{ height: 8 }} />
-    {/* On paper: every exercise and every set, the browser's print dialog or the phone's print sheet. */}
-    <Button icon="note" onClick={saveAsPdf}>{t('Save as PDF')}</Button>
-    <div style={{ height: 8 }} />
-    <Button icon="download" onClick={exportFit}>{t('Export as .fit file')}</Button>
     <div style={{ height: 10 }} />
     {/* Matched the way the edits above are, not by id: a workout from before ids has none, and
         filtering on `x.id !== undefined` took every other one of them with it. */}
@@ -3585,111 +3538,114 @@ export function setsLine(sets, unit) {
   }
   return sets.map(s => (s.w > 0 ? fmtNum(s.w) + '×' : '') + reps(s)).join(' · ')
 }
-const TREND = { 1: ['arrowUp', 'var(--green)'], 0: ['minus', 'var(--text-2)'], [-1]: ['arrowDown', 'var(--orange)'] }
-function LastAndNext({ st, w }) {
-  const rows = finishCompare(st, w)
-  if (!rows.length) return null
-  const nextWord = { up: t('step up'), hold: t('same again'), down: t('lighter'), deload: t('deload') }
-  return <div style={{ textAlign: 'start', marginBottom: 14 }}>
-    <h4 className="sec">{t('Last time and next time')}</h4>
-    <div className="list">{rows.map(row => {
-      const ex = EXIDX[row.id]
-      const tr = row.trend == null ? null : TREND[row.trend]
-      return <div key={row.id} className="item" style={{ display: 'block' }}>
-        <div className="row between" style={{ gap: 8 }}>
-          <span className={'tt ' + exerciseNameClass(ex)} style={{ fontWeight: 600 }}>{ex ? exerciseNameFor(ex) : row.id}</span>
-          {tr ? <span style={{ color: tr[1], display: 'inline-flex' }} aria-label={row.trend > 0 ? t('Up on last time') : row.trend < 0 ? t('Down on last time') : t('Same as last time')}><Icon name={tr[0]} /></span>
-            : <span className="tag nocap">{t('First time')}</span>}
-        </div>
-        <div className="small">{t('Today')}: {setsLine(row.today, st.unit)}</div>
-        {row.last && <div className="small dim">{t('Last time')}: {setsLine(row.last, st.unit)}</div>}
-        {row.next && <div className="small accent">{t('Next time')}: {row.next.w != null ? fmtNum(row.next.w) + ' ' + st.unit : ''}{row.next.w != null && row.next.r != null ? ' × ' : ''}{row.next.r != null ? row.next.r : ''} · {nextWord[row.next.kind]}</div>}
-      </div>
-    })}</div>
-  </div>
-}
-
-// The cardio of the session, which "Last time and next time" leaves out: minutes, speed and the
-// treadmill's incline as they were logged.
-function CardioDone({ st, w }) {
-  const rows = finishCardio(w)
-  if (!rows.length) return null
-  return <div style={{ textAlign: 'start', marginBottom: 14 }}>
-    <h4 className="sec">{t('Cardio')}</h4>
-    <div className="list">{rows.map((row, i) => {
-      const ex = EXIDX[row.id]
-      return <div key={i} className="item" style={{ display: 'block' }}>
-        <span className={'tt ' + exerciseNameClass(ex)} style={{ fontWeight: 600 }}>{ex ? exerciseNameFor(ex) : row.id}</span>
-        <div className="small">{row.sets.map(x => setLabel(row.id, x, row.target, speedUnitOf(st)) + hrLabel(x)).join('  ·  ')}</div>
-      </div>
-    })}</div>
-  </div>
-}
-
-// Exercises added during a routine's session, offered to that routine for next time (#592). One
-// tap adds them with today's setup; leaving the summary without it changes nothing.
 // The finish asks, per routine of the workout, whether what was just done becomes that routine's
 // template (owner, 2026-11-17): the exercises done, in their order, with their set counts and
 // supersets (lib/session-routines.js templateChanges). Asked only where the workout differs from
-// the template, and nothing is written unless "Use this workout as the template" is tapped.
-function TemplateChoice({ templates }) {
-  const [picked, setPicked] = useState({})
-  if (!templates?.length) return null
-  const nameOf = id => (EXIDX[id] ? exerciseNameText(EXIDX[id]) : id)
-  const useIt = tp => {
-    let ok = false
-    update(s => { ok = applyTemplate(s.routines.find(r => r.id === tp.routineId), tp.changes.ex) })
-    setPicked(x => ({ ...x, [tp.routineId]: ok ? 'new' : 'old' }))
-    if (ok) ui().toast(t('Routine updated'))
-  }
-  const lines = c => [
-    c.added.length ? t('Added: {0}', c.added.map(nameOf).join(', ')) : null,
-    c.removed.length ? t('Not done: {0}', c.removed.map(nameOf).join(', ')) : null,
-    ...c.sets.map(x => t('{0}: {1} sets instead of {2}', nameOf(x.id), x.to, x.from)),
-    c.reordered ? t('Different order') : null,
-    c.supersets ? t('Different supersets') : null,
+// the template, once the summary is saved, one routine at a time in a dialog of its own; nothing
+// is written unless "Update routine" is tapped.
+function templateSentence(changes) {
+  const c = templateChangeCounts(changes)
+  const parts = [
+    c.added ? tn('{0} exercise added', '{0} exercises added', c.added) : null,
+    c.removed ? tn('{0} exercise not done', '{0} exercises not done', c.removed) : null,
+    c.setsAdded ? tn('{0} set added', '{0} sets added', c.setsAdded) : null,
+    c.setsRemoved ? tn('{0} set removed', '{0} sets removed', c.setsRemoved) : null,
+    c.reordered ? t('order changed') : null,
+    c.supersets ? t('supersets changed') : null,
   ].filter(Boolean)
-  return <div className="tpl-choice" data-template-choice>
-    {templates.map(tp => <div key={tp.routineId} className="tpl-item" data-routine={tp.routineId}>
-      <h4 className="sec">{t('Use this workout as the template for “{0}”?', tp.name)}</h4>
-      <ul className="tpl-lines">{lines(tp.changes).map((l, i) => <li key={i}>{l}</li>)}</ul>
-      {picked[tp.routineId]
-        ? <div className="small accent row" style={{ gap: 6 }}><Icon name="checkCircle" /><span>{picked[tp.routineId] === 'new' ? t('“{0}” now follows this workout', tp.name) : t('“{0}” stays as it was', tp.name)}</span></div>
-        : <div className="tpl-acts">
-          <Button variant="tinted" icon="checkCircle" onClick={() => useIt(tp)}>{t('Use this workout as the template')}</Button>
-          <Button variant="ghost" onClick={() => setPicked(x => ({ ...x, [tp.routineId]: 'old' }))}>{t('Keep the current template')}</Button>
-        </div>}
-    </div>)}
+  return t('Compared with the routine: {0}.', parts.join(', '))
+}
+function TemplateAsk({ tp, close, onDone }) {
+  const answer = keep => {
+    if (!keep) {
+      let ok = false
+      update(s => { ok = applyTemplate(s.routines.find(r => r.id === tp.routineId), tp.changes.ex) })
+      if (ok) ui().toast(t('Routine updated'))
+    }
+    close()
+    onDone()
+  }
+  return <div className="tpl-ask" data-template-choice data-routine={tp.routineId}>
+    <div className="tpl-ask-ico"><Icon name="clipboard" /></div>
+    <h3>{t('Update “{0}”', tp.name)}</h3>
+    <p className="muted small">{templateSentence(tp.changes)}</p>
+    <Button variant="primary" onClick={() => answer(false)}>{t('Update routine')}</Button>
+    <div style={{ height: 8 }} />
+    <Button onClick={() => answer(true)}>{t('Keep original routine')}</Button>
   </div>
 }
+function askTemplates(templates, done) {
+  const [tp, ...rest] = templates || []
+  if (!tp) { done(); return }
+  ui().openSheet(close => <TemplateAsk tp={tp} close={close} onDone={() => askTemplates(rest, done)} />, { kind: 'center', locked: true })
+}
 
-function FinishSummary({ w, prs, e1prs = [], templates = [], close }) {
+// Where the workout was done: the places used before and the gym cards' labels, or a new name.
+function PlacePicker({ value, onPick, close }) {
+  const inputRef = useRef(null)
+  const onFocus = useSheetKeyboard(inputRef)
   const st = useStore(s => s.S)
-  return <div style={{ textAlign: 'center', padding: '8px 0' }}>
-    {/* Sticky, so the summary can be left from the top however far it has been scrolled. */}
-    <div className="fin-x"><button type="button" className="iconbtn" aria-label={t('Close')} onClick={() => closeThenNav(close, '/home')}><Icon name="xmark" /></button></div>
-    <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)', position: 'relative' }}><Icon name="trophy" /><SeasonDeco spot="finish" workout /></div>
-    <h3 style={{ margin: '8px 0' }}>{t('Workout complete!')}</h3>
-    <div className="tiles fin" style={{ textAlign: 'start' }}>
-      <div className="tile"><div className="l">{t('Duration')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtDur(w.end - w.start)}</div></div>
-      <div className="tile"><div className="l">{t('Volume')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtVol(sessionVolume(w, st), st.unit)}</div></div>
-      <div className="tile wide"><div className="l">{t('Sets')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{setsWorkCount(setsDone(w), workSetsDone(w))}</div></div>
-      <div className="tile narrow"><div className="l">{t('PRs')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{prs.length || '–'}</div></div>
-    </div>
-    {(prs.length > 0 || e1prs.length > 0) && <div style={{ textAlign: 'start', marginBottom: 12 }}>
-      {prs.map(id => <div key={id} className="small accent row" style={{ gap: 6, alignItems: 'flex-start' }}><Icon name="trophy" style={{ fontSize: 13, marginTop: 2, flex: 'none' }} /><span>{t('New PR:')} <span className={exerciseNameClass(EXIDX[id])}>{EXIDX[id] ? exerciseNameFor(EXIDX[id]) : id}</span></span></div>)}
-      {e1prs.map(p => <div key={p.id} className="small accent row" style={{ gap: 6, alignItems: 'flex-start' }}><Icon name="chartLine" style={{ fontSize: 13, marginTop: 2, flex: 'none' }} /><span>{t('Best estimated 1RM:')} <span className={exerciseNameClass(EXIDX[p.id])}>{EXIDX[p.id] ? exerciseNameFor(EXIDX[p.id]) : p.id}</span> · {fmtNum(p.est)} {st.unit}</span></div>)}
+  const [name, setName] = useState('')
+  const known = placesOf(st)
+  const pick = p => { onPick(cleanPlace(p)); close() }
+  return <>
+    <h3>{t('Gym')}</h3>
+    {known.length > 0 && <div className="list" style={{ marginBottom: 12 }}>
+      {known.map(p => <Row key={p} icon="mapPin" title={p} accessory={p === value ? 'check' : undefined} onClick={() => pick(p)} />)}
     </div>}
-    <h4 className="sec" style={{ textAlign: 'start' }}>{t('What you just trained')}</h4>
-    <BodyMap load={loadOfWorkouts([w])} body={st.body} />
-    <div style={{ height: 14 }} />
-    <LastAndNext st={st} w={w} />
-    <CardioDone st={st} w={w} />
-    <TemplateChoice templates={templates} />
+    <input ref={inputRef} className="input" type="text" maxLength={PLACE_MAX} value={name}
+      placeholder={t('New gym name')} onFocus={onFocus} onChange={e => setName(e.target.value)}
+      onKeyDown={e => { if (e.key === 'Enter' && cleanPlace(name)) pick(name) }} />
+    <div style={{ height: 12 }} />
+    <Button variant="primary" disabled={!cleanPlace(name)} onClick={() => pick(name)}>{t('Add')}</Button>
+    {value && <><div style={{ height: 8 }} /><Button variant="ghost" onClick={() => pick('')}>{t('No gym')}</Button></>}
+  </>
+}
+
+// The finish summary (owner, 2026-11-17): plain on purpose. The name, a note, one line with the
+// duration, the volume and the sets, the photos and the gym; the exercises are not listed again.
+// Save writes the note and the gym onto the workout (already saved when this opens), then asks
+// about each routine's template, then goes home.
+function FinishSummary({ w, prs, templates = [], close }) {
+  const st = useStore(s => s.S)
+  const noteRef = useRef(null)
+  const onNoteFocus = useSheetKeyboard(noteRef)
+  const [note, setNote] = useState(w.note || '')
+  const [place, setPlace] = useState(placeOf(w))
+  const save = () => {
+    update(s => {
+      const rec = s.workouts.find(x => sameWorkout(x, w))
+      if (!rec) return
+      const text = note.trim().slice(0, NOTE_MAX)
+      const changed = text !== (rec.note || '') || place !== placeOf(rec)
+      if (!changed) return
+      if (text) rec.note = text; else delete rec.note
+      if (place) rec.place = place; else delete rec.place
+      stampWorkout(rec)
+    })
+    close()
+    askTemplates(templates, () => nav('/home'))
+  }
+  return <div className="fin2">
+    <div className="fin2-head">
+      <h3 className="fin2-title">{w.name || t('Workout')}<SeasonDeco spot="finish" workout /></h3>
+    </div>
+    <textarea ref={noteRef} className="fin2-note" rows={2} maxLength={NOTE_MAX} value={note}
+      placeholder={t('How did your workout go?')} onFocus={onNoteFocus} onChange={e => setNote(e.target.value)} />
+    <div className="fin2-stats">
+      <div><div className="l">{t('Duration')}</div><div className="v accent">{fmtDur(w.end - w.start)}</div></div>
+      <div><div className="l">{t('Volume')}</div><div className="v">{fmtVol(sessionVolume(w, st), st.unit)}</div></div>
+      <div><div className="l">{t('Sets')}</div><div className="v">{workSetsDone(w)}</div></div>
+    </div>
+    {prs.length > 0 && <div className="small accent row fin2-pr"><Icon name="trophy" /><span>{tn('{0} new record', '{0} new records', prs.length)}</span></div>}
     {/* The moment for a progress photo or the clip of a set: the workout is already saved, so
         what is added here goes straight onto its record. */}
-    <div style={{ textAlign: 'start' }}><WorkoutMediaSection w={w} hint /></div>
-    <Button variant="primary" onClick={() => closeThenNav(close, '/home')}>{t('Nice!')}</Button>
+    <WorkoutMediaSection w={w} hint />
+    <div className="list fin2-list">
+      <Row icon="mapPin" title={t('Gym')} value={place || t('Select')} accessory="chevron"
+        onClick={() => ui().openSheet(c2 => <PlacePicker value={place} onPick={setPlace} close={c2} />)} />
+    </div>
+    <Button variant="primary" onClick={save}>{t('Save')}</Button>
   </div>
 }
 export function finishWorkout() {
@@ -3783,5 +3739,5 @@ function doFinishWorkout() {
   // into s.active, which is gone. What it held is not logged, like any set left unchecked.
   useUI.getState().stopWork()
   beep(snd(), 880, 0.15); beep(snd(), 1100, 0.15, 0.18); beep(snd(), 1320, 0.3, 0.36)
-  ui().openSheet(close => <FinishSummary w={shown} prs={prs} e1prs={e1prs} templates={templates} close={close} />, { kind: 'center', locked: true, wide: true })
+  ui().openSheet(close => <FinishSummary w={shown} prs={prs} templates={templates} close={close} />, { kind: 'center', locked: true, wide: true })
 }

@@ -78,16 +78,19 @@ afterEach(() => {
 })
 
 describe('a workout\'s photos and videos', () => {
-  it('asks for images and videos, several at once', () => {
+  it('the detail sheet shows no empty section; the editor and the finish screen still offer Add', () => {
     workoutDetailSheet(S().workouts[0])
-    const input = renderTop().querySelector('.wmedia input[type="file"]')
+    expect(renderTop().querySelector('.wmedia')).toBeNull()
+  })
+
+  it('asks for images and videos, several at once', () => {
+    const input = render(<WorkoutMediaSection w={S().workouts[0]} />).querySelector('.wmedia input[type="file"]')
     expect(input.getAttribute('accept')).toBe('image/*,video/*')
     expect(input.multiple).toBe(true)
   })
 
   it('a picked photo and video land on the saved record, stamped, with their files pending — never the file name', async () => {
-    workoutDetailSheet(S().workouts[0])
-    const host = renderTop()
+    const host = render(<WorkoutMediaSection w={S().workouts[0]} />)
     await pick(host, 2)
     const w = S().workouts[0]
     expect(w.media).toEqual([refOf(1), refOf(2, 'video')])
@@ -131,8 +134,7 @@ describe('a workout\'s photos and videos', () => {
   })
 
   it('a full workout offers no Add and says how many fit; a seventh picked in a batch is refused', async () => {
-    workoutDetailSheet(S().workouts[0])
-    const host = renderTop()
+    const host = render(<WorkoutMediaSection w={S().workouts[0]} />)
     await pick(host, WORKOUT_MEDIA_MAX + 1, WORKOUT_MEDIA_MAX)
     expect(S().workouts[0].media).toHaveLength(WORKOUT_MEDIA_MAX)
     expect(h.ingest).toHaveBeenCalledTimes(WORKOUT_MEDIA_MAX)   // the seventh is never ingested

@@ -238,3 +238,59 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -.02em }
 .tpl-lines{margin:0 0 10px;padding-inline-start:18px;font-size:13px;color:var(--label-2);display:flex;flex-direction:column;gap:2px}
 .tpl-acts{display:flex;flex-direction:column;gap:6px}
 .tpl-acts .btn{width:100%}
+
+/* ------------------------------------------------- Heart rate over the session -- */
+/* components/HeartRate.jsx and HeartRateChart.jsx: the curve on a workout's read-back, and the
+   sheet where a tap on it says the bpm at that minute. */
+.hr-card{background:var(--surface-2);border-radius:var(--r);padding:12px 14px;margin-bottom:12px}
+.hr-card.tappable{cursor:pointer}
+.hr-card .chev{color:var(--label-3)}
+.hr-card-l{font-size:13px;color:var(--label-2)}
+.hr-card-v{font-size:22px;font-weight:700;margin-bottom:6px}
+.hr-card-max{font-size:14px;font-weight:500;color:var(--label-2)}
+.hrc{display:block;overflow:visible;touch-action:pan-y}
+.hrc.live{touch-action:none;cursor:crosshair}
+.hrc-area{fill:var(--red);fill-opacity:.85}
+.hrc-line{fill:none;stroke:var(--red);stroke-width:1.5;stroke-linejoin:round}
+.hrc-grid{stroke:var(--sep);stroke-dasharray:3 3}
+.hrc-base{stroke:var(--sep)}
+.hrc-pick{stroke:var(--label);stroke-width:1.5}
+.hrc-dot{fill:var(--red);stroke:var(--label);stroke-width:1.5}
+.hrc-mark{fill:var(--label-3)}
+.hrc-lbl{font-size:10px;fill:var(--label-3)}
+.hr-pick{min-height:52px;display:flex;flex-direction:column;justify-content:center;gap:4px;margin-bottom:8px}
+.hr-pick .thumb{width:32px;height:32px;flex:none}
+.hr-pick-ex{font-weight:600;overflow-wrap:anywhere}
+.hr-pick-v{font-size:17px}
+
+/* ------------------------------------------------- Finish: the plain summary -- */
+/* sheets.jsx FinishSummary: the name, a note, duration · volume · sets, photos, the gym, Save.
+   Then each routine's template question in its own dialog (TemplateAsk). */
+.fin2{text-align:start;padding:4px 0}
+.fin2-title{position:relative;margin:0 0 6px;font-size:22px;line-height:1.2;overflow-wrap:anywhere}
+.fin2-note{width:100%;min-height:44px;resize:vertical;border:0;background:none;padding:0 0 10px;color:var(--label);
+  font:inherit;font-size:15px;border-bottom:1px solid var(--sep);outline:none}
+.fin2-note::placeholder{color:var(--label-3)}
+.fin2-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 0;border-bottom:1px solid var(--sep);margin-bottom:12px}
+.fin2-stats .l{font-size:12px;color:var(--label-2)}
+.fin2-stats .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.fin2-pr{gap:6px;margin-bottom:10px}
+.fin2-list{margin:12px 0 16px}
+.tpl-ask{text-align:center;padding:6px 0}
+.tpl-ask-ico{font-size:34px;display:flex;justify-content:center;color:var(--label-2);margin-bottom:6px}
+.tpl-ask h3{margin:0 0 6px}
+.tpl-ask p{margin:0 0 16px}
+
+/* ------------------------------------------------- Home: a day's workout as a card -- */
+.dayw-who{display:flex;flex-direction:column;margin-bottom:6px}
+.dayw-user{font-size:14px;font-weight:600}
+.dayw-who .dayw-meta{margin-top:0;font-size:12px}
+.dayw-stats{display:flex;flex-wrap:wrap;gap:6px 22px;margin:8px 0 10px}
+.dayw-stats .l{font-size:12px;color:var(--label-2)}
+.dayw-stats .v{display:flex;align-items:center;gap:4px;font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
+.dayw-stats .v .icn{font-size:14px}
+.dayw-ex{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid var(--sep)}
+.dayw-exrow{display:flex;align-items:center;gap:12px;font-size:15px}
+.dayw-exrow .thumb{width:44px;height:44px;flex:none;border-radius:50%}
+.dayw-exrow .grow{flex:1;min-width:0;overflow-wrap:anywhere}
+.dayw-card .dayw-more{display:flex;margin:8px auto 0;color:var(--label-2)}

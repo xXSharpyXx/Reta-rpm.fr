@@ -239,18 +239,9 @@ function MuscleBalance({ S }) {
       {find && findExercises(muscle)}
     </div>
   })
-  const completionSummary = <>
-    {missed.length > 0 && <>
-      <h4 className="sec" style={{ marginTop: 12 }}>{on ? t('No hard sets in this period') : t('Not trained in this period')}</h4>
-      {/* A tap opens the exercises for that muscle (#553). */}
-      <div className="mchips">{missed.map(m => <button type="button" key={m} className="mchip miss" data-muscle={m}
-        aria-label={t('Exercises for {0}', t(MUSCLE_NAME[m]))} onClick={() => openMuscle(m)}>{t(MUSCLE_NAME[m])}</button>)}</div>
-    </>}
-    {!missed.length && worked.length > 0 &&
-      <div className="muted small" style={{ marginTop: 10 }}>{on
-        ? t('Every muscle group got at least one hard set in this period.')
-        : t('Every muscle group got some work in this period.')}</div>}
-  </>
+  // The muscles not trained in the period are no longer listed under the rows (owner,
+  // 2026-11-17): the body map above already shows them blank.
+  const completionSummary = null
   const weeklyToggle = rowCount => weekly && !sel && rowCount > 4 && <>
     <div style={{ height: 8 }} />
     <Button className="weekly-volume-toggle" trailingIcon="chevronDown" aria-expanded={weeklyExpanded}

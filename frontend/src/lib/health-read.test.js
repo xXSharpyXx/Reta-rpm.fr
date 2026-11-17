@@ -63,7 +63,23 @@ describe('mergeHeartRate', () => {
 
   it('lacksHeartRate', () => {
     expect(lacksHeartRate(workout([{ w: 60, r: 8, done: true }]))).toBe(true)
-    expect(lacksHeartRate({ ...workout([{ w: 60, r: 8, done: true, hr: { avg: 100, max: 120 } }]), hr: { avg: 1, max: 2 } })).toBe(false)
+    const series = { t0: s(0), dt: 15, v: [100, 110] }
+    expect(lacksHeartRate({ ...workout([{ w: 60, r: 8, done: true, hr: { avg: 100, max: 120 } }]), hr: { avg: 1, max: 2 }, hrSeries: series })).toBe(false)
+    // Without the curve for the chart, the hub is still worth asking.
+    expect(lacksHeartRate({ ...workout([{ w: 60, r: 8, done: true, hr: { avg: 100, max: 120 } }]), hr: { avg: 1, max: 2 } })).toBe(true)
+  })
+
+  it('keeps the curve of the session for the chart, and a fuller one replaces it', () => {
+    const S = { workouts: [workout([{ w: 60, r: 8, done: true, at: s(300) }])] }
+    expect(mergeHeartRate(S, 'w1', dense(0, 300, 120), 'hc', 1000)).toBe(true)
+    const first = S.workouts[0].hrSeries
+    expect(first.t0).toBe(s(0))
+    expect(first.dt).toBe(15)
+    expect(first.v.slice(0, 3)).toEqual([120, 120, 120])
+    expect(first.v[30]).toBe(null)
+    expect(mergeHeartRate(S, 'w1', dense(0, 600, 120), 'hc', 2000)).toBe(true)
+    expect(S.workouts[0].hrSeries.v.filter(x => x != null).length).toBeGreaterThan(first.v.filter(x => x != null).length)
+    expect(mergeHeartRate(S, 'w1', dense(0, 600, 120), 'hc', 3000)).toBe(false)
   })
 
   it('the fields survive a sync merge between two devices', () => {

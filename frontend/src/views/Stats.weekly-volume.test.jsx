@@ -54,8 +54,7 @@ const row = muscle => comparison().querySelector(`[data-muscle-volume="${muscle}
 const value = muscle => row(muscle).querySelector('.v')
 const bar = muscle => row(muscle).querySelector('.bar i')
 const renderedMuscles = () => [...comparison().querySelectorAll('[data-muscle-volume]')].map(item => item.dataset.muscleVolume)
-const missedHeading = () => [...comparison().querySelectorAll('h4')].find(item => item.textContent === 'Not trained in this period') || null
-const isBefore = (first, second) => Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING)
+
 
 describe('Stats — weekly planned vs completed volume', () => {
   it('shows completed/planned progress with completed first for the current week', () => {
@@ -101,32 +100,20 @@ describe('Stats — weekly planned vs completed volume', () => {
     expect(weeklyToggle().textContent).toBe('Show more')
     expect(weeklyToggle().getAttribute('aria-expanded')).toBe('false')
     expect(weeklyToggle().querySelector('[data-icon="chevronDown"]')).toBeTruthy()
-    expect(isBefore(weeklyToggle(), missedHeading())).toBe(true)
-    expect([...comparison().querySelectorAll('.mchip.miss')].map(item => item.textContent)).toContain('Triceps')
+    expect(comparison().querySelector('.mchip.miss')).toBeNull()
 
     act(() => weeklyToggle().click())
     expect(renderedMuscles()).toEqual(['biceps', 'upper-back', 'chest', 'calves', 'deltoids', 'triceps'])
     expect(weeklyToggle().textContent).toBe('Show less')
     expect(weeklyToggle().getAttribute('aria-expanded')).toBe('true')
     expect(weeklyToggle().querySelector('[data-icon="chevronDown"]')).toBeTruthy()
-    expect(isBefore(weeklyToggle(), missedHeading())).toBe(true)
     expect(value('triceps').textContent).toBe('0/4.8 · 0%')
-    expect(isBefore(row('triceps'), missedHeading())).toBe(true)
-    expect([...comparison().querySelectorAll('.mchip.miss')].map(item => item.textContent)).toContain('Triceps')
+    expect(comparison().querySelector('.mchip.miss')).toBeNull()
 
     act(() => weeklyToggle().click())
     expect(renderedMuscles()).toEqual(['biceps', 'upper-back', 'chest', 'calves'])
     expect(weeklyToggle().textContent).toBe('Show more')
     expect(weeklyToggle().getAttribute('aria-expanded')).toBe('false')
-  })
-
-  it('shows the completed-all-muscles summary after current-week rows', () => {
-    mocks.S = state({ workouts: MUSCLES.map(muscle => completed('2026-09-30', muscle, 1)) })
-    mount()
-    const summary = [...comparison().querySelectorAll('.muted.small')]
-      .find(item => item.textContent === 'Every muscle group got some work in this period.')
-    expect(summary).toBeTruthy()
-    expect(isBefore(row(renderedMuscles().at(-1)), summary)).toBe(true)
   })
 
   it('shows the selected muscle completed/planned ratio below the completed map', () => {
@@ -175,7 +162,7 @@ describe('Stats — weekly planned vs completed volume', () => {
     expect(comparison().textContent).not.toContain('/')
     expect(comparison().textContent).not.toContain('Planned')
     expect(comparison().querySelector('[aria-label*="Planned"]')).toBeNull()
-    expect([...comparison().querySelectorAll('.mchip.miss')].map(item => item.textContent)).toContain('Chest')
+    expect(comparison().querySelector('.mchip.miss')).toBeNull()
     expect(button('Next week').disabled).toBe(false)
     act(() => button('Next week').click())
     expect(comparison().dataset.week).toBe('2026-09-27')
@@ -208,7 +195,6 @@ describe('Stats — weekly planned vs completed volume', () => {
     expect(weeklyToggle().textContent).toBe('Show less')
     expect(weeklyToggle().getAttribute('aria-expanded')).toBe('true')
     expect(weeklyToggle().querySelector('[data-icon="chevronDown"]')).toBeTruthy()
-    expect(isBefore(weeklyToggle(), missedHeading())).toBe(true)
     expect(comparison().textContent).not.toContain('/')
     expect(comparison().textContent).not.toContain('Planned')
     expect(comparison().querySelector('[aria-label*="Planned"]')).toBeNull()
@@ -277,20 +263,6 @@ describe('Stats — weekly planned vs completed volume', () => {
   })
 
   // #553: an untrained muscle opens the exercises that train it.
-  it('a tap on an untrained muscle opens its exercises', () => {
-    mocks.nav = vi.fn()
-    mocks.S = state({
-      routines: [{ id: 'push', name: 'Push', ex: [{ id: 'press', sets: 12 }] }],
-      workouts: [completed('2026-09-30', 'chest', 8)],
-    })
-    mount()
-    const chip = comparison().querySelector('.mchip.miss')
-    expect(chip.tagName).toBe('BUTTON')
-    act(() => chip.click())
-    expect(mocks.nav).toHaveBeenCalledWith('/muscles?m=' + chip.dataset.muscle, { state: { from: '/stats' } })
-    expect(MUSCLES).toContain(chip.dataset.muscle)
-  })
-
   // #553: picking an untrained muscle on the map itself, not only its chip, leads to its exercises.
   const find = () => host.querySelector('[data-find-exercises]')
   const tapChest = () => act(() => host.querySelector('[data-body-map] button[aria-label="Chest"]').click())

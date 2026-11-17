@@ -15,6 +15,7 @@ import { summaryRows } from '../lib/workout-summary.js'
 import { tappable } from '../lib/use-sheet-keyboard.js'
 import { Thumb } from './Media.jsx'
 import Icon from './Icon.jsx'
+import { HeartRateCard } from './HeartRate.jsx'
 
 const nameOf = e => (EXIDX[e.id] ? exerciseNameFor(EXIDX[e.id]) : (e.n || e.id))
 
@@ -43,7 +44,6 @@ function SetTable({ e, st, isPr }) {
         {r.effort && <span className="wsum-eff">{r.effort}</span>}
         {r.fail && <span className="wsum-badge fail">{t('Failure')}</span>}
         {r.pr && <span className="pr"><Icon name="trophy" />PR</span>}
-        {r.hr && <span className="wsum-eff">{r.hr}</span>}
       </div></td>
     </tr>)}</tbody>
   </table>
@@ -107,6 +107,8 @@ export default function WorkoutSummary({ w, onExercise, withBw = false }) {
   return <div className="wsum">
     <h3 className="wsum-title">{w.name || t('Workout')}</h3>
     <WorkoutMeta w={w} st={st} withBw={withBw} />
+    {/* The heart rate as one curve over the session, not an average beside every set. */}
+    <HeartRateCard w={w} />
     <WorkoutExercises w={w} onExercise={onExercise} />
   </div>
 }

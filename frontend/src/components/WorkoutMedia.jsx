@@ -46,7 +46,7 @@ export const serverTakesWorkoutMedia = (user, config) => !user || !config || !co
  * is nothing to show and nothing could be added (a server that does not keep them, a browser
  * that cannot store them).
  */
-export default function WorkoutMediaSection({ w, hint = false }) {
+export default function WorkoutMediaSection({ w, hint = false, hideEmpty = false }) {
   const rec = useRecord(w)
   const update = useStore(s => s.update)
   const user = useStore(s => s.user)
@@ -59,6 +59,8 @@ export default function WorkoutMediaSection({ w, hint = false }) {
   const showAdd = pickerShowsAdd && serverTakesWorkoutMedia(user, config)
   const canAdd = pickerCanAdd && showAdd
   if (!list.length && !(showAdd && storable)) return null
+  // A read-only view (the workout's detail sheet) shows the section only once there is something in it.
+  if (!list.length && hideEmpty) return null
 
   const onFiles = async ev => {
     const picked = [...(ev.target.files || [])]
