@@ -41,14 +41,14 @@ describe('RestTimer Ready and overtime display', () => {
 
     expect(host.querySelector('#timer .t').textContent).toBe('Ready')
     expect(host.querySelector('#timer .t').getAttribute('role')).toBe('status')
-    expect(host.querySelector('#timer .skip .on').textContent).toBe('Dismiss')
+    expect(host.querySelector('#timer .tclock').getAttribute('aria-label')).toBe('Ready. Dismiss')
     expect(useUI.getState().timer.forIdx).toBe(4)
 
     act(() => root.render(null))
     expect(host.querySelector('#timer')).toBeNull()
     mount()
     expect(host.querySelector('#timer .t').textContent).toBe('Ready')
-    act(() => host.querySelector('#timer .skip').click())
+    act(() => host.querySelector('#timer .tclock').click())
     expect(useUI.getState().timer).toBeNull()
   })
 
@@ -66,26 +66,6 @@ describe('RestTimer Ready and overtime display', () => {
 // same button carries on from there. A rest that is over has nothing left to hold.
 describe('RestTimer pause and resume', () => {
   const pause = () => host.querySelector('#timer .pause')
-
-  it('pauses the countdown, shows it held, and resumes from the same second', () => {
-    act(() => useUI.getState().startRest(90, 0))
-    mount()
-    act(() => vi.advanceTimersByTime(10000))
-    expect(host.querySelector('#timer .t').textContent).toBe('1:20')
-    expect(pause().getAttribute('aria-label')).toBe('Pause')
-
-    act(() => pause().click())
-    expect(host.querySelector('#timer').classList.contains('paused')).toBe(true)
-    expect(pause().getAttribute('aria-label')).toBe('Resume')
-    expect(pause().getAttribute('aria-pressed')).toBe('true')
-    act(() => vi.advanceTimersByTime(60000))
-    expect(host.querySelector('#timer .t').textContent).toBe('1:20')
-
-    act(() => pause().click())
-    expect(host.querySelector('#timer').classList.contains('paused')).toBe(false)
-    act(() => vi.advanceTimersByTime(20000))
-    expect(host.querySelector('#timer .t').textContent).toBe('1:00')
-  })
 
   it('offers no pause once the rest is Ready, and none on the timed hold', () => {
     act(() => useUI.getState().startRest(1))

@@ -103,4 +103,37 @@ class ModelTest {
         assertNotNull(r)
         assertEquals(120_000L, r!!.totalMs)
     }
+
+    @Test fun stepsTheWeightByTenths() {
+        assertEquals(62.6, Model.stepWeight(62.5, 1), 1e-9)
+        assertEquals(61.5, Model.stepWeight(62.5, -10), 1e-9)
+        assertEquals(0.0, Model.stepWeight(0.2, -5), 1e-9)
+        assertEquals(0.1, Model.stepWeight(null, 1), 1e-9)
+        assertEquals(999.9, Model.stepWeight(999.9, 3), 1e-9)
+    }
+
+    @Test fun stepsTheReps() {
+        assertEquals(9, Model.stepReps(8, 1))
+        assertEquals(0, Model.stepReps(1, -4))
+        assertEquals(1, Model.stepReps(null, 1))
+    }
+
+    @Test fun readsWhatWasTyped() {
+        assertEquals(62.5, Model.typedWeight("62,5")!!, 1e-9)
+        assertEquals(62.0, Model.typedWeight("62.")!!, 1e-9)
+        assertNull(Model.typedWeight(""))
+        assertNull(Model.typedWeight("1200"))
+        assertEquals(12, Model.typedReps("12"))
+        assertNull(Model.typedReps("1.5"))
+    }
+
+    @Test fun theKeypad() {
+        assertEquals("6", Model.keypad("0", '6', true))
+        assertEquals("62.", Model.keypad("62", '.', true))
+        assertEquals("62", Model.keypad("62", '.', false))
+        assertEquals("62.5", Model.keypad("62.", '5', true))
+        assertEquals("62.55", Model.keypad("62.55", '1', true))
+        assertEquals("62.5", Model.keypad("62.55", '<', true))
+        assertEquals("0.", Model.keypad("", '.', true))
+    }
 }

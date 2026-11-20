@@ -2759,4 +2759,13 @@ export default {
   "{0} new records": "{0} neue Rekorde",
   "See {0} more exercise": "{0} weitere Übung anzeigen",
   "See {0} more exercises": "{0} weitere Übungen anzeigen",
+  'Follow the device (light or dark)': 'Dem Gerät folgen (hell oder dunkel)',
+  'Forest': 'Wald',
+  'More themes': 'Weitere Designs',
+  'Neon': 'Neon',
+  'Note for this session': 'Notiz für dieses Training',
+  'Ocean': 'Ozean',
+  'Pick your look': 'Wähle deinen Look',
+  'Sand': 'Sand',
+  'You can change it any time in Settings.': 'Du kannst es jederzeit in den Einstellungen ändern.',
 }

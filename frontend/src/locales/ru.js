@@ -2743,4 +2743,13 @@ export default {
   "{0} new records": { one: "{0} новый рекорд", few: "{0} новых рекорда", many: "{0} новых рекордов" },
   "See {0} more exercise": "Ещё упражнений: {0}",
   "See {0} more exercises": { one: "Ещё {0} упражнение", few: "Ещё {0} упражнения", many: "Ещё {0} упражнений" },
+  'Follow the device (light or dark)': 'Как на устройстве (светлая или тёмная)',
+  'Forest': 'Лес',
+  'More themes': 'Другие темы',
+  'Neon': 'Неон',
+  'Note for this session': 'Заметка к этой тренировке',
+  'Ocean': 'Океан',
+  'Pick your look': 'Выбери оформление',
+  'Sand': 'Песок',
+  'You can change it any time in Settings.': 'Его можно сменить в любой момент в Настройках.',
 }

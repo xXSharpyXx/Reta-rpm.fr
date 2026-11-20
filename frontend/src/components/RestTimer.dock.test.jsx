@@ -44,66 +44,15 @@ const sheetHost = () => {
 
 // v1.3.11: one docked row; the clock is a button that opens the wheel at the time left.
 describe('the docked rest bar', () => {
-  it('is one row: the clock with its label, then −15, +15, pause and Skip', () => {
+  it('holds only the time left: no −15, +15, pause or Skip', () => {
     act(() => useUI.getState().startRest(90, 0))
     mount()
     const bar = host.querySelector('#timer.rest')
     expect(bar.querySelector('button.tclock .t').textContent).toBe('1:30')
     expect(bar.querySelector('.tclock .lbl').textContent).toBe('Rest')
-    expect([...bar.querySelectorAll('.acts > button')].map(b => b.getAttribute('aria-label') || (b.querySelector('.on') || b).textContent.trim()))
-      .toEqual(['15s', '15s', 'Pause', 'Skip'])
+    expect(bar.querySelectorAll('.acts').length).toBe(0)
+    expect(bar.querySelectorAll('button').length).toBe(1)
     expect(bar.querySelector('.tclock').getAttribute('aria-label')).toBe('1:30. Change the time left')
-  })
-
-  // QA 10-05: Ready used to drop the pause button and reflow the row, so the spot +15 had been
-  // in became −15. The slots stay put now: the pause slot is kept (inert, invisible) and Skip
-  // carries Dismiss in the same cell, so its width does not change either.
-  it('keeps every button in its slot when the rest turns Ready', () => {
-    act(() => useUI.getState().startRest(1, 0))
-    mount()
-    const slots = () => [...host.querySelectorAll('#timer .acts > button')].map(b => b.className.match(/adj|pause-slot|pause|skip/)[0])
-    expect(slots()).toEqual(['adj', 'adj', 'pause', 'skip'])
-    expect(host.querySelector('#timer .t').dataset.alt).toBe('Ready')
-    const skipCell = () => [...host.querySelectorAll('#timer .skip > span:not(.skip-probe) > span')].map(s => s.textContent).sort()
-    expect(skipCell()).toEqual(['Dismiss', 'Skip'])
-    act(() => vi.advanceTimersByTime(1000))
-    expect(host.querySelector('#timer .t').textContent).toBe('Ready')
-    expect(slots()).toEqual(['adj', 'adj', 'pause-slot', 'skip'])
-    expect(host.querySelector('#timer .t').dataset.alt).toBe('0:00')
-    expect(skipCell()).toEqual(['Dismiss', 'Skip'])
-    const stand = host.querySelector('#timer .pause-slot')
-    expect(stand.disabled).toBe(true)
-    expect(stand.getAttribute('aria-hidden')).toBe('true')
-    expect(stand.tabIndex).toBe(-1)
-    expect(host.querySelector('#timer .skip .off').getAttribute('aria-hidden')).toBe('true')
-  })
-
-  it('shows Skip as an icon, named in full, when its label does not fit, and Dismiss as × once Ready', () => {
-    const rect = Element.prototype.getBoundingClientRect
-    Element.prototype.getBoundingClientRect = function () {
-      const r = rect.call(this)
-      return this.parentElement?.classList.contains('skip-probe') ? { ...r, width: 400 } : r
-    }
-    try {
-      act(() => useUI.getState().startRest(1, 0))
-      mount()
-      const skip = host.querySelector('#timer .skip')
-      expect(skip.classList.contains('icon-only')).toBe(true)
-      expect(skip.getAttribute('aria-label')).toBe('Skip')
-      expect(skip.querySelector('.on')).toBeNull()
-      expect(skip.querySelector('svg')).toBeTruthy()
-      act(() => vi.advanceTimersByTime(1000))
-      expect(host.querySelector('#timer .skip').getAttribute('aria-label')).toBe('Dismiss')
-      act(() => host.querySelector('#timer .skip').click())
-      expect(useUI.getState().timer).toBeNull()
-    } finally { Element.prototype.getBoundingClientRect = rect }
-  })
-
-  it('says Paused under the clock while the rest is held', () => {
-    act(() => useUI.getState().startRest(90, 0))
-    mount()
-    act(() => host.querySelector('#timer .pause').click())
-    expect(host.querySelector('#timer .tclock .lbl').textContent).toBe('Paused')
   })
 
   it('opens the wheel at the time left, and Done sets the rest to what was picked', () => {
@@ -172,7 +121,6 @@ describe('the docked rest bar', () => {
     expect(useUI.getState().timer).toMatchObject({ left: 900, total: 900 })
     act(() => useUI.getState().addRest(15))
     expect(useUI.getState().timer.left).toBe(900)
-    expect(host.querySelectorAll('#timer .adj')[1].disabled).toBe(true)
     act(() => useUI.getState().addRest(-15))
     expect(useUI.getState().timer.left).toBe(885)
   })

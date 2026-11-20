@@ -2739,4 +2739,13 @@ export default {
   "{0} new records": "{0} नए रिकॉर्ड",
   "See {0} more exercise": "{0} और एक्सरसाइज़ देखें",
   "See {0} more exercises": "{0} और एक्सरसाइज़ देखें",
+  'Follow the device (light or dark)': 'डिवाइस के अनुसार (हल्का या गहरा)',
+  'Forest': 'जंगल',
+  'More themes': 'और थीम',
+  'Neon': 'नियॉन',
+  'Note for this session': 'इस सेशन के लिए नोट',
+  'Ocean': 'समुद्र',
+  'Pick your look': 'अपना लुक चुनें',
+  'Sand': 'रेत',
+  'You can change it any time in Settings.': 'आप इसे कभी भी सेटिंग्स में बदल सकते हैं।',
 }

@@ -2739,4 +2739,13 @@ export default {
   "{0} new records": "{0} 项新纪录",
   "See {0} more exercise": "再看 {0} 个动作",
   "See {0} more exercises": "再看 {0} 个动作",
+  'Follow the device (light or dark)': '跟随设备（浅色或深色）',
+  'Forest': '森林',
+  'More themes': '更多主题',
+  'Neon': '霓虹',
+  'Note for this session': '本次训练的备注',
+  'Ocean': '海洋',
+  'Pick your look': '选择你的外观',
+  'Sand': '沙色',
+  'You can change it any time in Settings.': '你可以随时在设置中更改。',
 }

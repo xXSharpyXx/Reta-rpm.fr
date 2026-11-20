@@ -2818,4 +2818,13 @@ export default {
   "{0} new records": "{0}টি নতুন রেকর্ড",
   "See {0} more exercise": "আরও {0}টি ব্যায়াম দেখো",
   "See {0} more exercises": "আরও {0}টি ব্যায়াম দেখো",
+  'Follow the device (light or dark)': 'ডিভাইস অনুযায়ী (হালকা বা গাঢ়)',
+  'Forest': 'বন',
+  'More themes': 'আরও থিম',
+  'Neon': 'নিয়ন',
+  'Note for this session': 'এই সেশনের জন্য নোট',
+  'Ocean': 'সমুদ্র',
+  'Pick your look': 'তোমার লুক বেছে নাও',
+  'Sand': 'বালি',
+  'You can change it any time in Settings.': 'সেটিংসে যেকোনো সময় বদলাতে পারো।',
 }

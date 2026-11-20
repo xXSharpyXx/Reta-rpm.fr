@@ -168,6 +168,41 @@ object Model {
         }
     }
 
+    /** The weight step of a drag or a bezel click on the watch: a tenth of a kilo (or pound). */
+    const val WEIGHT_STEP = 0.1
+    const val WEIGHT_MAX = 999.9
+    const val REPS_MAX = 999
+
+    /** The weight moved by a number of tenths, rounded to the tenth, never below 0. */
+    fun stepWeight(w: Double?, steps: Int): Double {
+        val tenths = Math.round((w ?: 0.0) * 10) + steps
+        return (tenths.coerceIn(0L, Math.round(WEIGHT_MAX * 10)) / 10.0)
+    }
+
+    /** The reps moved by a number of steps, never below 0. */
+    fun stepReps(r: Int?, steps: Int): Int = ((r ?: 0) + steps).coerceIn(0, REPS_MAX)
+
+    /** What was typed on the keypad as a weight ("62.5", "62,5", "62."): 62.5 or 62.0; null when it is not one. */
+    fun typedWeight(text: String): Double? {
+        val v = text.trim().replace(',', '.').toDoubleOrNull() ?: return null
+        if (v.isNaN() || v < 0 || v > WEIGHT_MAX) return null
+        return Math.round(v * 100) / 100.0
+    }
+
+    /** What was typed as reps: a whole number, else null. */
+    fun typedReps(text: String): Int? = text.trim().toIntOrNull()?.takeIf { it in 0..REPS_MAX }
+
+    /** A key pressed on the keypad, applied to what is typed so far (one dot at most, two decimals, 6 characters). */
+    fun keypad(text: String, key: Char, decimal: Boolean): String = when {
+        key == '<' -> text.dropLast(1)
+        key == '.' -> if (!decimal || text.contains('.')) text else (if (text.isEmpty()) "0." else "$text.")
+        !key.isDigit() -> text
+        text.length >= 6 -> text
+        text.contains('.') && text.substringAfter('.').length >= 2 -> text
+        text == "0" -> key.toString()
+        else -> text + key
+    }
+
     /** "1:05", "0:09". */
     fun clock(ms: Long): String {
         val s = ((ms.coerceAtLeast(0) + 999) / 1000)

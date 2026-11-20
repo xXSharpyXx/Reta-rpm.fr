@@ -12,6 +12,8 @@
 //
 // An exercise with no machine reads the whole log as before, and so does a profile that never
 // lists one: nothing is written, nothing is filtered.
+import { equipGroupOf } from './exercise-filters.js'
+
 export const MAX_GYMS = 12
 export const GYM_NAME_MAX = 40
 
@@ -103,4 +105,14 @@ export const GYM_SUGGESTIONS = ['Basic-Fit', 'Technogym', 'Gigafit', 'Speedform'
 export function suggestedGyms(list) {
   const have = new Set((Array.isArray(list) ? list : []).filter(g => g && typeof g.name === 'string').map(g => g.name.toLowerCase()))
   return GYM_SUGGESTIONS.filter(n => !have.has(n.toLowerCase()))
+}
+
+/**
+ * Whether an exercise is done on something you pick at the gym (a machine, a cable stack, a
+ * Smith): those ask which one. Free weights, body weight and bands never do, a dumbbell is a
+ * dumbbell wherever you are.
+ */
+export const usesMachine = ex => {
+  const g = equipGroupOf(ex?.eq)
+  return g === 'machine' || g === 'cable'
 }

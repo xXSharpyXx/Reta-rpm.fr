@@ -46,6 +46,9 @@ import MobileOnboarding from './views/MobileOnboarding.jsx'
 import PermissionSteps from './views/PermissionSteps.jsx'
 import Home from './views/Home.jsx'
 import Plan from './views/Plan.jsx'
+import { resolveAppTheme } from './lib/app-themes.js'
+import { themeWelcomeSheet } from './components/ThemePicker.jsx'
+import { DEMO } from './lib/demo.js'
 import Workout from './views/Workout.jsx'
 
 // Screens most sessions never open (the Coach, the admin dashboard, photos, measurements, the
@@ -95,17 +98,17 @@ const scrollPositions = new Map()
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
+// The look (lib/app-themes.js): data-theme is its light or dark base, data-skin the look itself.
 // theme === 'system' follows the OS/browser preference instead of a fixed choice.
-const resolveTheme = theme => theme === 'light' || theme === 'dark'
-  ? theme
-  : (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-
 function applyPrefs(theme, accent) {
   const de = document.documentElement
-  de.dataset.theme = resolveTheme(theme)
+  const { base, skin } = resolveAppTheme(theme, !!window.matchMedia?.('(prefers-color-scheme: dark)').matches)
+  de.dataset.theme = base
+  if (skin) de.dataset.skin = skin
+  else delete de.dataset.skin
   applyAccent(de, accent, de.dataset.theme)
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
+  if (meta) meta.content = (typeof getComputedStyle === 'function' && getComputedStyle(de).getPropertyValue('--bg').trim()) || (base === 'light' ? '#f2f2f7' : '#000000')
   if (MOBILE) setSystemBarsLight(de.dataset.theme === 'light')
 }
 
@@ -283,6 +286,9 @@ function Shell() {
   const authed = user || isGuest
   // The boot screen in index.html covers the start; it goes once there is something to show.
   useEffect(() => { if (ready || authed) hideBoot() }, [ready, authed])
+  // The first launch asks for a look, once, before anything else (components/ThemePicker.jsx).
+  const askTheme = !!(authed && ready && !needsMobileOnboarding && !permSteps && !inWorkout && !S.themePicked && !DEMO)
+  useEffect(() => { if (askTheme) themeWelcomeSheet() }, [askTheme])
   if (!ready && !authed) return (
     <div id="app">
       <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>

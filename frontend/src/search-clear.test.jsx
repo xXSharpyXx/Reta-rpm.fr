@@ -32,11 +32,9 @@ function type(el, value) {
   el.dispatchEvent(new Event('input', { bubbles: true }))
 }
 const chip = (host, text) => [...host.querySelectorAll('.chips .chip')].find(b => b.textContent.trim() === text)
-// The Library narrows by muscle in a sheet of tiles (components/FilterSheets.jsx); the picker still
-// has body-part chips. Each helper narrows (or widens again) the screen it is given and says
+// The Library and the picker both narrow by muscle in a sheet of tiles (components/FilterSheets.jsx). Each helper narrows (or widens again) the screen it is given and says
 // how many exercises the narrowing leaves.
 function narrow(host, where) {
-  if (where !== 'Library') { act(() => chip(host, 'neck').click()); return EXDB.filter(e => e.bp === 'neck').length }
   act(() => host.querySelector('.fs-btn').click())
   const sheetHost = renderTopSheet()
   act(() => [...sheetHost.querySelectorAll('.fs-tile')].find(b => b.textContent === 'Calves').click())
@@ -44,7 +42,6 @@ function narrow(host, where) {
   return CATALOGUE.filter(e => matchesMuscles(e, ['calves'])).length
 }
 function widen(host, where) {
-  if (where !== 'Library') { act(() => chip(host, 'All').click()); return }
   act(() => [...host.querySelectorAll('.plan-textbtn')].find(b => b.textContent === 'Clear filters').click())
 }
 const clear = host => host.querySelector('.search .clear')

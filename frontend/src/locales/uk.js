@@ -2736,4 +2736,13 @@ export default {
   "{0} new records": { one: "{0} новий рекорд", few: "{0} нові рекорди", many: "{0} нових рекордів" },
   "See {0} more exercise": "Ще вправ: {0}",
   "See {0} more exercises": { one: "Ще {0} вправа", few: "Ще {0} вправи", many: "Ще {0} вправ" },
+  'Follow the device (light or dark)': 'Як на пристрої (світла або темна)',
+  'Forest': 'Ліс',
+  'More themes': 'Інші теми',
+  'Neon': 'Неон',
+  'Note for this session': 'Нотатка до цього тренування',
+  'Ocean': 'Океан',
+  'Pick your look': 'Обери оформлення',
+  'Sand': 'Пісок',
+  'You can change it any time in Settings.': 'Його можна змінити будь-коли в Налаштуваннях.',
 }

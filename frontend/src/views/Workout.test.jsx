@@ -235,10 +235,13 @@ async function rerender() {
 }
 
 async function addExerciseThroughSheets(ex = { id: 'added-exercise' }, cfg = { mode: 'reps', sets: 1, reps: 5, weight: 0 }) {
-  const addButton = [...container.querySelectorAll('button')]
-    .find(button => button.textContent.trim() === 'Add exercise')
-  expect(addButton).toBeTruthy()
-  await act(async () => { addButton.dispatchEvent(new dom.Event('click', { bubbles: true })) })
+  // Add exercise is in the header's ⋯ (Workout options) while you train.
+  const opts = container.querySelector('button[aria-label="Workout options"]')
+  expect(opts).toBeTruthy()
+  await act(async () => { opts.dispatchEvent(new dom.Event('click', { bubbles: true })) })
+  const addItem = menuItemsOf(mocks.menuSheet.mock.calls.at(-1)[0]).find(it => it.label === 'Add exercise')
+  expect(addItem).toBeTruthy()
+  await act(async () => { addItem.onClick() })
 
   const pickerCall = mocks.exercisePicker.mock.calls.at(-1)
   expect(pickerCall?.[0]).toEqual(expect.any(Function))
@@ -1662,22 +1665,6 @@ describe('workout focus view', () => {
     expect(buttonNamed('RPE').disabled).toBe(true)
   })
 
-  it('pairs adjacent exercises from Focus and can unpair them', async () => {
-    await mount([exercise('plain-bench', [false]), exercise('plain-row', [false])], 0, { active: { workoutView: 'focus' } })
-
-    await click(buttonNamed('More'))
-    const pair = mocks.menuSheet.mock.calls.at(-1)[0].items.find(item => item?.label === 'Make superset with next')
-    expect(pair).toBeTruthy()
-    await act(async () => { pair.onClick() })
-    await rerender()
-    expect(container.querySelector('.focus-superset')).toBeNull()
-    expect(container.querySelector('.focus-card .focus-superset-inline')).toBeTruthy()
-
-    await click(buttonNamed('Unpair'))
-    await rerender()
-    expect(container.querySelector('.focus-superset')).toBeNull()
-  })
-
   it('uses the shared effort picker for the selected RPE scale', async () => {
     await mount([exercise('plain-bench', [false])], 0, { active: { workoutView: 'focus' }, effort: 'rpe' })
 
@@ -2819,10 +2806,9 @@ describe('workout controls: the more menu and the set menu', () => {
     await act(async () => { container.querySelector('button[aria-label="More"]').dispatchEvent(new dom.Event('click', { bubbles: true })) })
     expect(mocks.menuSheet).toHaveBeenCalledOnce()
     expect(menuItemsOf(lastMenu()).map(it => it.label)).toEqual(expect.arrayContaining([
-      'Add note', 'How to do it', 'Add warm-up set', 'Make superset with next', 'Swap exercise', 'Move up', 'Move down', 'Remove exercise',
+      'How to do it', 'Add warm-up set', 'Swap exercise', 'Remove exercise',
     ]))
-    expect(item('Move up').disabled).toBe(true)
-    expect(item('Move down').disabled).toBe(false)
+    for (const gone of ['Move up', 'Move down', 'Make superset with next', 'Rest timer', 'Exercise settings', 'Machine']) expect(item(gone)).toBeUndefined()
     expect(item('Remove exercise').danger).toBe(true)
 
     item('Swap exercise').onClick()
@@ -2843,27 +2829,6 @@ describe('workout controls: the more menu and the set menu', () => {
     expect(mocks.S.active.entries[0].sets.map(s => s.w)).toEqual([45, 55])
   })
 
-  // Move down on a superset member's More menu moved the whole superset and left the member next
-  // to the same partner (#377 reports it in the routine editor). It now swaps inside the superset.
-  it('moves a superset member inside its superset from that member\'s More menu', async () => {
-    await mount([
-      exercise('bench', [true]),
-      exercise('pull-up', [false], { sg: 'm' }),
-      exercise('leg-raise', [false], { sg: 'm' }),
-      exercise('plank', [false], { sg: 'm' }),
-    ], 1)
-    const more = container.querySelector('.ss-ex[data-exidx="2"] button[aria-label="More"]')
-    expect(more).toBeTruthy()
-    await act(async () => { more.dispatchEvent(new dom.Event('click', { bubbles: true })) })
-    expect(item('Move up').disabled).toBe(false)
-    expect(item('Move down').disabled).toBe(false)
-    await act(async () => { item('Move down').onClick() })
-
-    expect(mocks.S.active.entries.map(entry => entry.id)).toEqual(['bench', 'pull-up', 'plank', 'leg-raise'])
-    expect(mocks.S.active.entries.slice(1).map(entry => entry.sg)).toEqual(['m', 'm', 'm'])
-    expect(mocks.S.active.entries[mocks.S.active.cur].id).toBe('pull-up')
-  })
-
   // A move reorders the entries, and two things the screen keeps by index have to follow their
   // exercise: the running rest (timer.forIdx) and how many sets of each exercise have already
   // counted as progress (the mark a tick is compared against to tell new work from a re-check).
@@ -2873,60 +2838,6 @@ describe('workout controls: the more menu and the set menu', () => {
     await act(async () => { more.dispatchEvent(new dom.Event('click', { bubbles: true })) })
   }
   const restFor = forIdx => ({ left: 60, total: 60, endsAt: Date.now() + 60_000, forIdx, kind: 'set' })
-
-  it('a member swap during a rest hands the rest to the moved exercise\'s new place', async () => {
-    await mount([
-      exercise('bench', [true]),
-      exercise('pull-up', [true, false], { sg: 'm' }),
-      exercise('leg-raise', [true, false], { sg: 'm' }),
-      exercise('plank', [false, false], { sg: 'm' }),
-    ], 1)
-    mocks.timer = restFor(2)
-    await openMore(2)
-    await act(async () => { item('Move down').onClick() })
-
-    expect(mocks.S.active.entries.map(entry => entry.id)).toEqual(['bench', 'pull-up', 'plank', 'leg-raise'])
-    expect(mocks.timer.forIdx).toBe(3)
-    expect(mocks.S.active.entries[mocks.timer.forIdx].id).toBe('leg-raise')
-    expect(mocks.timer.endsAt).toBeGreaterThan(Date.now())
-    expect(mocks.stopRest).not.toHaveBeenCalled()
-  })
-
-  it('a whole-superset move during a rest hands the rest to the resting exercise\'s new place', async () => {
-    await mount([
-      exercise('bench', [true, false]),
-      exercise('pull-up', [false], { sg: 'm' }),
-      exercise('leg-raise', [false], { sg: 'm' }),
-    ], 1)
-    mocks.timer = restFor(0)
-    await openMore(1)
-    await act(async () => { item('Move up').onClick() })
-
-    expect(mocks.S.active.entries.map(entry => entry.id)).toEqual(['pull-up', 'leg-raise', 'bench'])
-    expect(mocks.timer.forIdx).toBe(2)
-    expect(mocks.S.active.entries[mocks.timer.forIdx].id).toBe('bench')
-  })
-
-  it('a member swap keeps each exercise\'s counted sets with it, so its next tick still counts', async () => {
-    // pull-up has two sets counted, leg-raise none. After the swap, the leg raise's first tick
-    // is new work and moves on through the superset; read against the pull-up's two it would be
-    // taken for a re-check and go nowhere.
-    await mount([
-      exercise('bench', [true]),
-      exercise('pull-up', [true, true, false], { sg: 'm' }),
-      exercise('leg-raise', [false, false, false], { sg: 'm' }),
-      exercise('plank', [false, false, false], { sg: 'm' }),
-    ], 1)
-    await openMore(1)
-    await act(async () => { item('Move down').onClick() })
-    expect(mocks.S.active.entries.map(entry => entry.id)).toEqual(['bench', 'leg-raise', 'pull-up', 'plank'])
-    expect(mocks.S.active.cur).toBe(1)
-
-    const tick = container.querySelector('.ss-ex[data-exidx="1"] [role="checkbox"]')
-    await act(async () => { tick.dispatchEvent(new dom.Event('click', { bubbles: true })) })
-    expect(mocks.S.active.entries[1].sets.filter(set => set.done)).toHaveLength(1)
-    expect(mocks.S.active.cur).toBe(2)
-  })
 
   it('opens the exercise history sheet from the More menu, for the tapped exercise', async () => {
     // the screen shows one exercise at a time, so "the tapped exercise" is the current one
@@ -3250,30 +3161,20 @@ describe('per-side effort completion', () => {
 
 // QA C9: custom exercises store their target as a muscle-map id ("gluteal"); the tag under the
 // exercise name has to show the same label the detail sheet does (Glutes), not the raw id.
-describe('Workout exercise tags', () => {
-  it('names a custom exercise\'s target muscle by its display name', async () => {
+describe('Workout exercise card', () => {
+  // The muscle is not shown on the card, nor the routine's note; today's note is typed right there.
+  it('shows no muscle tag and no routine note, and keeps a field for the note of this session', async () => {
     const { registerCustom } = await import('../lib/exercises.js')
     registerCustom([{ id: 'cqa1', n: 'QA Custom Thrust', bp: 'upper legs', eq: 'barbell', custom: true, tg: 'gluteal', sm: [], primaries: ['gluteal'], secondaries: [], muscleGroups: ['gluteal'] }])
     try {
-      await mount([exercise('cqa1', [false])])
+      await mount([exercise('cqa1', [false], { target: { mode: 'reps', sets: 1, reps: 5, weight: 60, note: 'From the plan' } })])
       const tags = [...container.querySelectorAll('.tag')].map(tag => tag.textContent.trim())
-      expect(tags).toContain('Glutes')
-      expect(tags).not.toContain('gluteal')
+      expect(tags).not.toContain('Glutes')
+      expect(container.textContent).not.toContain('From the plan')
+      const field = container.querySelector('textarea.exnote-in')
+      expect(field).toBeTruthy()
+      expect(field.getAttribute('placeholder')).toBe('Note for this session')
     } finally { registerCustom([]) }
-  })
-
-  // The cardio target "cardiovascular system" is a translated key of its own; mapping it through
-  // MUSCLE_NAME must not turn "Herz-Kreislauf" back into English for every built-in cardio exercise.
-  it('keeps the cardio target translated (burpee, de)', async () => {
-    const { _setLangState } = await import('../lib/i18n-core.js')
-    const { default: de } = await import('../locales/de.js')
-    _setLangState('de', de, null, null)
-    try {
-      await mount([exercise('1160', [false])])
-      const tags = [...container.querySelectorAll('.tag')].map(tag => tag.textContent.trim())
-      expect(tags).toContain('Herz-Kreislauf')
-      expect(tags).not.toContain('Cardiovascular system')
-    } finally { _setLangState('en', null, null, null) }
   })
 })
 
@@ -3627,15 +3528,14 @@ describe('the workout screen chrome (v1.3.11)', () => {
     expect(mocks.exercisePicker).toHaveBeenCalledOnce()
   })
 
-  it('groups the exercise menu: today, look it up, settings, order, and Remove on its own', async () => {
+  it('groups the exercise menu: today, look it up, progression, and Remove on its own', async () => {
     await mount([exercise('plain-bench', [false]), exercise('plain-row', [false])])
     await openMore()
     const groups = lastMenu().sections.map(g => [g.title, g.items.filter(Boolean).map(it => it.label)])
     expect(groups).toEqual([
-      ['Today', ['Swap exercise', 'Machine', 'Add warm-up set', 'Add note', 'Don’t count for progression']],
-      ['Look it up', ['History', 'How to do it']],
-      ['Settings', ['Exercise settings', 'Rest timer', 'Plate loading']],
-      ['Order and supersets', ['Make superset with next', 'Move up', 'Move down']],
+      [undefined, ['Swap exercise', 'Add warm-up set', 'Plate loading']],
+      [undefined, ['How to do it', 'History']],
+      [undefined, ['Don’t count for progression']],
       [undefined, ['Remove exercise']],
     ])
   })
@@ -3647,41 +3547,10 @@ describe('the workout screen chrome (v1.3.11)', () => {
     await openMore()
     const today = lastMenu().sections[0].items.filter(Boolean)
     const name = exerciseNameText(EXIDX['0047'])
-    expect(today.map(it => it.label)).toEqual(['Swap exercise', 'Swap to ' + name, 'Machine', 'Add warm-up set', 'Add note', 'Don’t count for progression'])
+    expect(today.map(it => it.label)).toEqual(['Swap exercise', 'Swap to ' + name, 'Add warm-up set', 'Plate loading'])
     expect(item('Swap to ' + name).sub).toBe('Planned backup, same sets and reps')
     item('Swap to ' + name).onClick()
     expect(mocks.swapActiveWorkoutToBackup).toHaveBeenCalledWith(0, '0047')
-  })
-
-  it('sets an exercise’s own rest: the default, no timer, or a time on a wheel that opens on the rest that applies (#735)', async () => {
-    await mount([exercise('plain-bench', [false])])
-    await openMore()
-    expect(item('Rest timer').sub).toBe('Default (1:30)')
-    item('Rest timer').onClick()
-    const restItems = () => menuItemsOf(lastMenu())
-    expect(restItems().map(it => [it.label, !!it.on])).toEqual([['Default (1:30)', true], ['No timer', false], ['Pick a time', false]])
-    restItems()[2].onClick()
-    const opts = mocks.durationSheet.mock.calls.at(-1)[0]
-    // Not 0:00: the dials sit on the 1:30 that applies, and 0:00 on them is no timer.
-    expect(opts).toMatchObject({ title: 'Rest for this exercise', value: 90, max: 900, off: 'No timer' })
-    await act(async () => { opts.onDone(135) })
-    expect(mocks.S.active.entries[0].target.restSec).toBe(135)
-    await rerender()
-    await openMore()
-    expect(item('Rest timer').sub).toBe('2:15')
-    item('Rest timer').onClick()
-    restItems()[2].onClick()
-    expect(mocks.durationSheet.mock.calls.at(-1)[0].value).toBe(135)
-    // 0:00 on the wheel is "No timer" now, stored as restOff, never as a 0 that reads as the default.
-    await act(async () => { mocks.durationSheet.mock.calls.at(-1)[0].onDone(0) })
-    expect(mocks.S.active.entries[0].target).toMatchObject({ restOff: true })
-    expect('restSec' in mocks.S.active.entries[0].target).toBe(false)
-    await rerender()
-    await openMore()
-    expect(item('Rest timer').sub).toBe('No timer')
-    item('Rest timer').onClick()
-    await act(async () => { restItems()[0].onClick() })
-    expect('restOff' in mocks.S.active.entries[0].target || 'restSec' in mocks.S.active.entries[0].target).toBe(false)
   })
 
   it('has no rest item in the editor of a saved workout', async () => {

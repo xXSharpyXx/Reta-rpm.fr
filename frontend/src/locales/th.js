@@ -2750,4 +2750,13 @@ export default {
   "{0} new records": "สถิติใหม่ {0} รายการ",
   "See {0} more exercise": "ดูอีก {0} ท่า",
   "See {0} more exercises": "ดูอีก {0} ท่า",
+  'Follow the device (light or dark)': 'ตามอุปกรณ์ (สว่างหรือมืด)',
+  'Forest': 'ป่า',
+  'More themes': 'ธีมอื่น ๆ',
+  'Neon': 'นีออน',
+  'Note for this session': 'โน้ตสำหรับเซสชันนี้',
+  'Ocean': 'มหาสมุทร',
+  'Pick your look': 'เลือกลุคของคุณ',
+  'Sand': 'ทราย',
+  'You can change it any time in Settings.': 'เปลี่ยนได้ทุกเมื่อในการตั้งค่า',
 }

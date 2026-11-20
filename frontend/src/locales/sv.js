@@ -2786,4 +2786,13 @@ export default {
   "{0} new records": "{0} nya rekord",
   "See {0} more exercise": "Visa {0} övning till",
   "See {0} more exercises": "Visa {0} övningar till",
+  'Follow the device (light or dark)': 'Följ enheten (ljust eller mörkt)',
+  'Forest': 'Skog',
+  'More themes': 'Fler teman',
+  'Neon': 'Neon',
+  'Note for this session': 'Anteckning för det här passet',
+  'Ocean': 'Hav',
+  'Pick your look': 'Välj ditt utseende',
+  'Sand': 'Sand',
+  'You can change it any time in Settings.': 'Du kan ändra det när som helst i Inställningar.',
 }

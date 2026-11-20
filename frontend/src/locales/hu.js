@@ -2742,4 +2742,13 @@ export default {
   "{0} new records": "{0} új rekord",
   "See {0} more exercise": "További {0} gyakorlat",
   "See {0} more exercises": "További {0} gyakorlat",
+  'Follow the device (light or dark)': 'Az eszköz szerint (világos vagy sötét)',
+  'Forest': 'Erdő',
+  'More themes': 'További témák',
+  'Neon': 'Neon',
+  'Note for this session': 'Jegyzet ehhez az edzéshez',
+  'Ocean': 'Óceán',
+  'Pick your look': 'Válaszd ki a stílusod',
+  'Sand': 'Homok',
+  'You can change it any time in Settings.': 'Bármikor módosíthatod a Beállításokban.',
 }

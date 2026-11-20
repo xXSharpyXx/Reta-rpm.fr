@@ -2739,4 +2739,13 @@ export default {
   "{0} new records": "새 기록 {0}개",
   "See {0} more exercise": "운동 {0}개 더 보기",
   "See {0} more exercises": "운동 {0}개 더 보기",
+  'Follow the device (light or dark)': '기기 설정 따르기 (라이트 또는 다크)',
+  'Forest': '숲',
+  'More themes': '테마 더 보기',
+  'Neon': '네온',
+  'Note for this session': '이번 운동 메모',
+  'Ocean': '바다',
+  'Pick your look': '스타일을 골라 주세요',
+  'Sand': '모래',
+  'You can change it any time in Settings.': '설정에서 언제든 바꿀 수 있어요.',
 }

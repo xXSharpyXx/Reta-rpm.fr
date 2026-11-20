@@ -3,14 +3,21 @@
 L'appli montre suit la séance qui tourne sur le téléphone Android. Le téléphone reste la référence :
 la montre affiche, valide et mesure, mais c'est le téléphone qui enregistre.
 
-- **Pendant une série** : l'exercice en cours, le numéro de série (`Série 2/4`, les échauffements à
-  part), la charge et les reps prévus, et un gros bouton **Valider la série**.
-- **Pendant le repos** : le temps restant en grand avec un anneau, `−15` / `+15`, **Passer**, la
-  série suivante en petit, et une vibration à la fin (écran éteint aussi).
+- **Pendant une série** : pas de nom d'exercice, juste le numéro de série en petit (`2/4`), deux
+  cases (reps et poids) et un gros bouton ✓ pour valider. Glisser vers le haut ou le bas sur une case
+  la règle (0,1 kg par cran pour le poids, une rep pour les reps), la lunette règle la dernière case
+  touchée, et une touche sur une case ouvre un pavé pour taper le chiffre. La série part au téléphone
+  avec ces valeurs.
+- **Pendant le repos** : le temps restant en grand avec un anneau, **Passer**, et une vibration à la
+  fin (écran éteint aussi).
 - **Toute la séance** : le rythme cardiaque, mesuré par Health Services et envoyé au téléphone avec
   l'heure de chaque mesure.
-- **Sans séance** : « Aucune séance en cours ». Elle apparaît dès qu'une séance démarre sur le
-  téléphone (et l'appli s'ouvre toute seule sur la montre, si celle-ci est à portée).
+- **Écran qui s'éteint** : l'appli passe en mode ambiant (noir et gris) au lieu de rendre la main au
+  cadran, et une « activité en cours » ramène sur l'appli quand tu rallumes la montre, tant que la
+  séance tourne.
+- **Sans séance** : « Aucune séance en cours ». Dès qu'une séance démarre sur le téléphone, l'appli
+  s'ouvre toute seule : le téléphone le demande, et la montre le fait aussi d'elle-même en recevant la
+  séance (une notification qui l'ouvre, en plein écran quand la montre l'autorise).
 
 Rien ne sort de tes deux appareils : le lien passe par le Data Layer de Wear OS (Bluetooth ou
 Wi-Fi entre la montre et le téléphone), sans compte ni serveur.

@@ -16,4 +16,7 @@
     <string name="notif_channel">Workout</string>
     <string name="notif_title">Workout in progress</string>
     <string name="notif_text">Measuring your heart rate</string>
+    <string name="reps_unit">reps</string>
+    <string name="open_channel">Workout start</string>
+    <string name="open_text">Tap to follow it on the watch</string>
 </resources>

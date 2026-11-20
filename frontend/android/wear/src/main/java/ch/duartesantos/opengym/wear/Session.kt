@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
+import kotlin.math.abs
 
 /** What the watch shows: the phone's workout, the sets ticked here not yet confirmed, the rest. */
 data class UiState(
@@ -19,7 +20,12 @@ data class UiState(
     val rest: Rest? = null,
     val bpm: Int? = null,
     val hrAllowed: Boolean = true,
+    /** Values changed on the watch for a set not ticked yet: "entry:set" → what it is logged with. */
+    val edits: Map<String, SetEdit> = emptyMap(),
 )
+
+/** A set's values as changed on the watch (a drag, the bezel, the keypad); null keeps the phone's. */
+data class SetEdit(val w: Double? = null, val r: Int? = null, val sec: Int? = null)
 
 /**
  * The one copy of the watch's state, shared by the screen and the services. The phone is the
@@ -33,6 +39,9 @@ object Session {
     // A tick the phone never confirms (it was undone there, the set is gone) stops counting. Long:
     // a phone locked in a pocket can take minutes to wake its page and apply the queue.
     private const val PENDING_MS = 10 * 60_000L
+    // A workout that turns up this long after the phone sent it is one already running, not one
+    // that just started: the app does not open itself for it.
+    private const val NEW_WORKOUT_MS = 2 * 60_000L
 
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -58,8 +67,29 @@ object Session {
         }
         val localFresh = sameWorkout && now - localAt < LOCAL_FRESH_MS
         val rest = Model.restAfterSnapshot(snap, now, cur.rest, cur.rest, localFresh)
-        _state.value = cur.copy(snap = snap, pending = pending, rest = rest, bpm = if (snap.active) cur.bpm else null)
+        val edits = if (!snap.active || !sameWorkout) emptyMap() else cur.edits.filter { (key, _) ->
+            val (ei, si) = key.split(":").map { it.toInt() }
+            snap.entries.getOrNull(ei)?.sets?.getOrNull(si)?.done == false
+        }
+        _state.value = cur.copy(snap = snap, pending = pending, rest = rest, bpm = if (snap.active) cur.bpm else null, edits = edits)
         RestAlarm.schedule(ctx, rest)
+        // A workout that just started on the phone: the app comes up by itself.
+        if (snap.active && !sameWorkout && (at == 0L || abs(now - at) < NEW_WORKOUT_MS)) Launcher.onNewWorkout(ctx)
+        if (!snap.active) Launcher.clear(ctx)
+    }
+
+    /** The values the set on screen is logged with: those changed here, else the phone's. */
+    fun valuesOf(st: UiState, t: Target): SetEdit {
+        val e = st.edits["${t.entryIdx}:${t.setIdx}"]
+        return SetEdit(w = e?.w ?: t.set.w, r = e?.r ?: t.set.r, sec = e?.sec ?: t.set.sec)
+    }
+
+    /** A value of the set on screen changed here, kept until the set is ticked here or on the phone. */
+    @Synchronized
+    fun edit(t: Target, change: (SetEdit) -> SetEdit) {
+        val cur = _state.value
+        val key = "${t.entryIdx}:${t.setIdx}"
+        _state.value = cur.copy(edits = cur.edits + (key to change(valuesOf(cur, t))))
     }
 
     /** "Set done": the set is ticked on the phone as a tap there would, and the rest starts here at once. */
@@ -77,14 +107,16 @@ object Session {
             .put("entryIdx", t.entryIdx)
             .put("setIdx", t.setIdx)
             .put("at", now)
-        t.set.w?.let { ev.put("w", it) }
-        t.set.r?.let { ev.put("r", it) }
-        t.set.sec?.let { ev.put("sec", it) }
+        val key = "${t.entryIdx}:${t.setIdx}"
+        val v = valuesOf(cur, t)
+        v.w?.let { ev.put("w", it) }
+        v.r?.let { ev.put("r", it) }
+        v.sec?.let { ev.put("sec", it) }
         PhoneLink.send(ctx, ev)
         localAt = now
         val sec = Model.restFor(snap, t.entryIdx)
         val rest = if (sec > 0) Rest(now + sec * 1000L, sec * 1000L) else null
-        _state.value = cur.copy(pending = cur.pending + ("${t.entryIdx}:${t.setIdx}" to now), rest = rest)
+        _state.value = cur.copy(pending = cur.pending + (key to now), rest = rest, edits = cur.edits - key)
         RestAlarm.schedule(ctx, rest)
     }
 

@@ -2794,4 +2794,13 @@ export default {
   "{0} new records": "أرقام قياسية جديدة: {0}",
   "See {0} more exercise": "عرض {0} تمارين أخرى",
   "See {0} more exercises": "عرض {0} تمارين أخرى",
+  'Follow the device (light or dark)': 'اتبع الجهاز (فاتح أو داكن)',
+  'Forest': 'غابة',
+  'More themes': 'مظاهر أخرى',
+  'Neon': 'نيون',
+  'Note for this session': 'ملاحظة لهذه الحصة',
+  'Ocean': 'محيط',
+  'Pick your look': 'اختر مظهرك',
+  'Sand': 'رمل',
+  'You can change it any time in Settings.': 'يمكنك تغييره في أي وقت من الإعدادات.',
 }

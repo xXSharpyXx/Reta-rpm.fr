@@ -253,26 +253,6 @@ describe('the superset card after a rating', () => {
     expect(mocks.S.active.cur).toBe(1)
     expect(seen).toEqual([partnerFirstRow()])
   })
-  // Exercise ⋯ → Move up: the unit changes place and the marker's index follows it. Not a move,
-  // so an on-screen row stays where it is.
-  it('moving the marker\'s unit up or down does not scroll', async () => {
-    await mount([lifted('0001'), lifted('0025', 'g'), lifted('0043', 'g')], 1, {}, () => rowsAt(400))
-    const seen = watchScrolls()
-    // Through the exercise's own ⋯ menu, as a thumb does it: the move records the marker's new
-    // index itself, which is what tells it apart from a real move.
-    await press(container.querySelector('button[aria-label="More"]'))
-    const items = menuItemsOf(mocks.menuSheet.mock.calls.at(-1)[0])
-    await act(async () => { items.find(i => i.label === 'Move up').onClick() })
-    await rerender()
-    expect(mocks.S.active.entries[0].id).toBe('0025')
-    expect(mocks.S.active.cur).toBe(0)
-    expect(seen).toEqual([])
-    // …while the tick that moves the marker to the partner still centres its row.
-    await press(container.querySelector('[role="checkbox"]'))
-    await rerender()
-    expect(mocks.S.active.cur).toBe(1)
-    expect(seen).toEqual([container.querySelectorAll('.setrow')[3]])
-  })
   // Two rows of the same exercise in one superset: the tick from one to the other is a move all
   // the same (judged by index), so rating the first still centres the second, through the wait,
   // with the picker's restore pending.

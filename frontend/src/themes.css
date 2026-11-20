@@ -1,0 +1,84 @@
+/* ============================================================================
+   The extra themes (lib/app-themes.js), and the workout screen's quieter pieces
+   ----------------------------------------------------------------------------
+   Loaded after brand.css. Each theme only sets the surface ramp and the text tints on top of
+   its light or dark base; the accent comes from the accent setting, which picking a theme sets.
+   ========================================================================== */
+
+/* Ocean: deep blue-green surfaces, a teal accent. */
+:root[data-skin="ocean"] {
+  --bg: #04131c; --bg-el: #071a26; --surface: #0b2433; --surface-2: #123247; --surface-3: #1b4560;
+  --label-2: rgba(220,240,250,.64); --label-3: rgba(220,240,250,.36); --label-4: rgba(220,240,250,.2);
+  --sep: rgba(160,220,255,.12); --sep-op: rgba(160,220,255,.08);
+}
+/* Forest: dark moss greens. */
+:root[data-skin="forest"] {
+  --bg: #07110b; --bg-el: #0b1810; --surface: #11231a; --surface-2: #193226; --surface-3: #244636;
+  --label-2: rgba(225,245,230,.62); --label-3: rgba(225,245,230,.35); --label-4: rgba(225,245,230,.2);
+  --sep: rgba(180,255,200,.11); --sep-op: rgba(180,255,200,.07);
+}
+/* Neon: violet night with a pink accent and a glow. */
+:root[data-skin="neon"] {
+  --bg: #0b0614; --bg-el: #110a1e; --surface: #1a1030; --surface-2: #261845; --surface-3: #35225e;
+  --label-2: rgba(240,225,255,.64); --label-3: rgba(240,225,255,.36); --label-4: rgba(240,225,255,.2);
+  --sep: rgba(220,170,255,.14); --sep-op: rgba(220,170,255,.09);
+}
+:root[data-skin="neon"] body { background: transparent }
+:root[data-skin="neon"] body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(60% 40% at 0% 20%, rgba(255,55,95,.22), transparent 72%),
+    radial-gradient(55% 40% at 100% 70%, rgba(94,92,230,.30), transparent 72%),
+    var(--bg);
+}
+/* Sand: a warm paper light theme. */
+:root[data-skin="sand"] {
+  --bg: #f4eee4; --bg-el: #f8f3ea; --surface: #fffaf2; --surface-2: #efe6d8; --surface-3: #e5d9c6;
+  --label: #2b2118; --label-2: rgba(70,50,30,.66); --label-3: rgba(70,50,30,.36); --label-4: rgba(70,50,30,.18);
+  --sep: rgba(90,60,30,.22); --sep-op: rgba(90,60,30,.14);
+}
+
+/* ------------------------------------------------------------- Theme picker -- */
+/* Settings → Look and the first launch (components/ThemePicker.jsx): one tile per theme, a small
+   painted preview of its page, card and accent. */
+.thp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.thp-tile{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:8px;border-radius:var(--r-card);
+  background:var(--surface-2);border:2px solid transparent;color:var(--label);font:inherit;cursor:pointer;min-width:0;text-align:center}
+.thp-tile.on{border-color:var(--acc)}
+.thp-tile:active{transform:scale(.98)}
+.thp-prev{position:relative;height:76px;border-radius:12px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(127,127,127,.25)}
+.thp-prev i{position:absolute;left:10%;right:10%;top:16%;height:34%;border-radius:8px}
+.thp-prev b{position:absolute;left:10%;width:46%;bottom:14%;height:18%;border-radius:99px}
+.thp-name{font-size:14px;font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+.thp-sec{margin:18px 0 10px}
+.thp-sys{margin-top:14px}
+.thp-intro{text-align:center;margin:0 0 6px}
+.thp-sub{text-align:center;margin:0 0 18px;color:var(--label-2)}
+.thp-more{display:flex;margin:14px auto 0}
+.thp-go{width:100%;margin-top:18px;min-height:50px}
+
+/* ---------------------------------------------------------- Workout screen -- */
+/* The swiping card's own ground covers the next card only while a swipe is under way: at rest
+   it lets the page's own background (the Reta glow, say) show through instead of a dark box. */
+.workout-swipe-card{background:transparent}
+.workout-swipe-stack:has(> .workout-swipe-preview) > .workout-swipe-card{background:var(--bg)}
+
+/* Today's note on an exercise, right on the card (views/Workout.jsx SessionNoteField). */
+.exnote-in{display:block;width:100%;resize:none;overflow:hidden;margin:2px 0 8px;padding:8px 12px;border:0;
+  border-radius:var(--r);background:var(--surface-2);color:var(--label);font:inherit;font-size:14px;line-height:1.35;outline:none}
+.exnote-in::placeholder{color:var(--label-3)}
+.exnote-in:focus{box-shadow:inset 0 0 0 1.5px var(--acc-line)}
+
+/* The rest bar holds only the time left, centred (components/RestTimer.jsx). */
+#timer.solo{justify-content:center}
+#timer.solo .tclock{flex:1 1 auto;flex-direction:row;align-items:baseline;justify-content:center;gap:10px;text-align:center}
+#timer.solo .t::after{content:none}
+#timer.solo .t,#timer.solo .lbl{flex:none;width:auto;min-width:0}
+#timer.solo.ready .t{color:var(--acc)}
+
+/* The swap and add picker's two filters, each with a drawing (sheets.jsx ExercisePicker). */
+.pk-filters{margin:10px 0}
+.pk-btn{padding-inline-start:6px}
+.pk-fig{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;overflow:hidden;background:var(--surface-3);font-size:14px}
+.pk-fig.fs-fig .bodymap.bm-mini .bm-v{height:22px}
+.fs-btn.on .pk-fig{background:var(--acc-soft)}

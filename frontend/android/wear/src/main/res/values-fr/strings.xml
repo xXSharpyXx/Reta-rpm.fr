@@ -15,4 +15,7 @@
     <string name="notif_channel">Séance</string>
     <string name="notif_title">Séance en cours</string>
     <string name="notif_text">Mesure du rythme cardiaque</string>
+    <string name="reps_unit">reps</string>
+    <string name="open_channel">Début de séance</string>
+    <string name="open_text">Touche pour la suivre sur la montre</string>
 </resources>

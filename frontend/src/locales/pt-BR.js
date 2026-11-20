@@ -1685,6 +1685,9 @@ export const PT_BR_OVERRIDES = {
   'Update Health Connect first, then try again.': 'Atualize primeiro o Health Connect e tente de novo.',
   'Install Health Connect first, then try again.': 'Instale primeiro o Health Connect e tente de novo.',
   'Read at every start. Sync reads them now.': 'Lidos a cada abertura. Sincronizar lê agora mesmo.',
+  'Neon': 'Neon',
+  'Pick your look': 'Escolha seu visual',
+  'You can change it any time in Settings.': 'Você pode mudar quando quiser nas Configurações.',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }

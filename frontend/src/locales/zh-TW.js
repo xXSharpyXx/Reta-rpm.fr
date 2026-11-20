@@ -2732,4 +2732,13 @@ export default {
   "{0} new records": "{0} 項新紀錄",
   "See {0} more exercise": "再看 {0} 個動作",
   "See {0} more exercises": "再看 {0} 個動作",
+  'Follow the device (light or dark)': '跟隨裝置（淺色或深色）',
+  'Forest': '森林',
+  'More themes': '更多主題',
+  'Neon': '霓虹',
+  'Note for this session': '本次訓練的備註',
+  'Ocean': '海洋',
+  'Pick your look': '選擇你的外觀',
+  'Sand': '沙色',
+  'You can change it any time in Settings.': '你可以隨時在設定中更改。',
 }

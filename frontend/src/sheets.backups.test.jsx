@@ -61,7 +61,8 @@ describe('the routine editor\'s exercise sheet', () => {
     act(() => [...sheet.querySelectorAll('button')].find(b => b.textContent === 'Add a backup').click())
     const picker = render(useUI.getState().sheets.at(-1))
     const name = exerciseNameFor(EXIDX['0289'])
-    act(() => [...picker.querySelectorAll('.chip')].find(c => c.textContent === 'All').click())
+    const same = [...picker.querySelectorAll('.pk-filters .chip')].find(c => c.textContent.startsWith('Same muscle'))
+    if (same?.getAttribute('aria-pressed') === 'true') act(() => same.click())
     const input = picker.querySelector('input.input')
     act(() => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, name)

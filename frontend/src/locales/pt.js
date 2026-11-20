@@ -2739,4 +2739,13 @@ export default {
   "{0} new records": "{0} novos recordes",
   "See {0} more exercise": "Ver mais {0} exercício",
   "See {0} more exercises": "Ver mais {0} exercícios",
+  'Follow the device (light or dark)': 'Seguir o dispositivo (claro ou escuro)',
+  'Forest': 'Floresta',
+  'More themes': 'Mais temas',
+  'Neon': 'Néon',
+  'Note for this session': 'Nota para esta sessão',
+  'Ocean': 'Oceano',
+  'Pick your look': 'Escolhe o teu visual',
+  'Sand': 'Areia',
+  'You can change it any time in Settings.': 'Podes mudá-lo quando quiseres nas Definições.',
 }

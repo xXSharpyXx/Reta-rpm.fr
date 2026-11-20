@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { gymsOf, gymNameOf, entryGym, defaultGymFor, gymHistory, cleanGymName, withGym, renamedGym, suggestedGyms, GYM_SUGGESTIONS, MAX_GYMS, GYM_NAME_MAX } from './gyms.js'
+import { gymsOf, gymNameOf, entryGym, defaultGymFor, gymHistory, cleanGymName, withGym, renamedGym, suggestedGyms, GYM_SUGGESTIONS, MAX_GYMS, GYM_NAME_MAX, usesMachine } from './gyms.js'
 import { lastEntryFor } from './history.js'
 
 const done = (w, r = 8) => ({ w, r, done: true })
@@ -137,5 +137,18 @@ describe('suggestedGyms', () => {
     expect(left).not.toContain('Basic-Fit')
     expect(left).not.toContain('Technogym')
     expect(left).toContain('Gigafit')
+  })
+})
+
+describe('usesMachine', () => {
+  it('asks for a machine on machines, cables and the Smith only', () => {
+    expect(usesMachine({ eq: 'leverage machine' })).toBe(true)
+    expect(usesMachine({ eq: 'cable' })).toBe(true)
+    expect(usesMachine({ eq: 'smith machine' })).toBe(true)
+    expect(usesMachine({ eq: 'dumbbell' })).toBe(false)
+    expect(usesMachine({ eq: 'barbell' })).toBe(false)
+    expect(usesMachine({ eq: 'body weight' })).toBe(false)
+    expect(usesMachine({})).toBe(false)
+    expect(usesMachine(null)).toBe(false)
   })
 })

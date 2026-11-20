@@ -2739,4 +2739,13 @@ export default {
   "{0} new records": "{0} yeni rekor",
   "See {0} more exercise": "{0} egzersiz daha gör",
   "See {0} more exercises": "{0} egzersiz daha gör",
+  'Follow the device (light or dark)': 'Cihazı izle (açık veya koyu)',
+  'Forest': 'Orman',
+  'More themes': 'Daha fazla tema',
+  'Neon': 'Neon',
+  'Note for this session': 'Bu antrenman için not',
+  'Ocean': 'Okyanus',
+  'Pick your look': 'Görünümünü seç',
+  'Sand': 'Kum',
+  'You can change it any time in Settings.': 'İstediğin zaman Ayarlar’dan değiştirebilirsin.',
 }

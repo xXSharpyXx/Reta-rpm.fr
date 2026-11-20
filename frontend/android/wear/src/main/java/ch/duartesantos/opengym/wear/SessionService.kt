@@ -27,6 +27,8 @@ import androidx.health.services.client.data.ExerciseUpdate
 import androidx.health.services.client.endExercise
 import androidx.health.services.client.getCapabilities
 import androidx.health.services.client.startExercise
+import androidx.wear.ongoing.OngoingActivity
+import androidx.wear.ongoing.Status
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -135,14 +137,26 @@ class SessionService : Service() {
             Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val n = NotificationCompat.Builder(this, CHANNEL)
+        val builder = NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_dumbbell)
             .setContentTitle(getString(R.string.notif_title))
             .setContentText(getString(R.string.notif_text))
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)
             .setOngoing(true)
             .setContentIntent(open)
-            .build()
+        // An ongoing activity: its icon on the watch face, and a wake of the screen goes back to the
+        // app for as long as the workout runs, instead of to the watch face.
+        try {
+            OngoingActivity.Builder(applicationContext, NOTIF_ID, builder)
+                .setStaticIcon(R.drawable.ic_stat_dumbbell)
+                .setTouchIntent(open)
+                .setStatus(Status.Builder().addTemplate(getString(R.string.notif_title)).build())
+                .build()
+                .apply(applicationContext)
+        } catch (e: Exception) {
+            // an older watch: the notification alone
+        }
+        val n = builder.build()
         return try {
             val type = if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH else 0
             ServiceCompat.startForeground(this, NOTIF_ID, n, type)

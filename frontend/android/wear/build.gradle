@@ -72,6 +72,10 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.9.4"
     implementation "androidx.wear.compose:compose-material:1.6.2"
     implementation "androidx.wear.compose:compose-foundation:1.6.2"
+    // Ambient mode (the app stays on screen while it dims) and the ongoing activity (the watch
+    // comes back to the app when it wakes, rather than to the watch face).
+    implementation "androidx.wear:wear:1.3.0"
+    implementation "androidx.wear:wear-ongoing:1.0.0"
     // The heart rate during the workout (ExerciseClient), on the watch's own sensor.
     implementation "androidx.health:health-services-client:1.1.0"
     // The Data Layer between the watch and the phone, over their own link.

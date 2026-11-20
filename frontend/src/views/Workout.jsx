@@ -8,7 +8,7 @@ import { useUI } from '../store/useUI.js'
 import { EXIDX, exOr, betterWeight } from '../lib/exercises.js'
 import { usesBar } from '../lib/bar.js'
 import { loadKindFor, baseWeightFor, inventoryFor, rowLoad, sameLoad, plateDelta, dropGrid } from '../lib/plates.js'
-import { effectiveRoutines, effectiveRoutineIds, lastEntryFor, bestWeightFor, bestWeightForEntry, freestyleConfig, pickedExerciseConfig, setsDoneActive, setUnitsTotal, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, repStep, EFFORT, effortOf, stepEffort, capEffort, cascadeWeight, insertWarmupRow, barFloor, removeRowAt, removeLastSet, setSpanAt, copyRowAt, copySpanAt, insertRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, setTypeOf, setTypeAt, canTypeWarmupAt, pinnedNoteFor, exNoteFor, setsRepsOf, sessionVolume } from '../lib/history.js'
+import { NOTE_MAX, effectiveRoutines, effectiveRoutineIds, lastEntryFor, bestWeightFor, bestWeightForEntry, freestyleConfig, pickedExerciseConfig, setsDoneActive, setUnitsTotal, supersetUnits, unitOf, setLabel, modeOf, isBw, isPerSide, repStep, EFFORT, effortOf, stepEffort, capEffort, cascadeWeight, insertWarmupRow, barFloor, removeRowAt, removeLastSet, setSpanAt, copyRowAt, copySpanAt, insertRowAt, pairAdjacent, unpairSuperset, cleanupSg, applyIntensifierPlan, setTypeOf, setTypeAt, canTypeWarmupAt, pinnedNoteFor, exNoteFor, setsRepsOf, sessionVolume } from '../lib/history.js'
 import { fmtNum, fmtPlate, fmtVol, exerciseNameText, fmtDate, fmtDaysAgo, todayISO, exCount, DAYN } from '../lib/format.js'
 import { speedUnitOf, toSpeed, fromSpeed } from '../lib/speed.js'
 import { clampIncline, hasIncline, inclineFits, inclineFrom, INCLINE_STEP } from '../lib/incline.js'
@@ -44,7 +44,7 @@ import { glyphOf } from '../lib/glyphs.js'
 import { markAllSetsDone, sessionHistory } from '../lib/backfill.js'
 import { bindWatchActions, markDiscarded } from '../lib/watch-sync.js'
 import { bestSetFor } from '../lib/exercise-history.js'
-import { gymHistory, gymNameOf } from '../lib/gyms.js'
+import { gymHistory, gymNameOf, usesMachine } from '../lib/gyms.js'
 import { editedRecord } from '../lib/session-edit.js'
 import WorkoutMediaSection from '../components/WorkoutMedia.jsx'
 import { isSimple } from '../lib/simple.js'
@@ -52,7 +52,6 @@ import { bindLiveActions } from '../lib/live-activity.js'
 import { isWarmupRow, isFailureSet, isDropSet, isRestPauseSet, dropsOf, clustersOf, addDrop, addCluster, removeDropAt, removeClusterAt, setDropAt, setClusterAt, nextDropWeight, nextBurstReps, isSideSet, makeSideSet, setSideField, toggleSide, addSideDrop, removeSideDropAt, setSideDropAt, addSideCluster, removeSideClusterAt, setSideClusterAt, WEIGHT_ORIGIN_MANUAL } from '../lib/workout-model.js'
 import { canMoveActiveWorkoutUnit, moveActiveWorkoutUnit, canMoveActiveWorkoutEntry, moveActiveWorkoutEntry } from '../lib/active-workout-order.js'
 import { nextOpenSet, workoutKeyAction } from '../lib/workout-keys.js'
-import { MUSCLE_NAME } from '../lib/muscles.js'
 import FocusView from './FocusView.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 import { entryDbLoad, bellsIn, ownedWeightsFor, stepOwned } from '../lib/dumbbells.js'
@@ -80,6 +79,26 @@ const RTL_LETTER = /[֐-ࣿיִ-﷿ﹰ-﻿]/
 // The pause between the left and the right side of one timed per-side set (owner's call): long
 // enough to turn over, far shorter than the rest the set earns once both sides are held.
 const SWITCH_SIDES_SEC = 10
+
+// Today's note on one exercise, typed on the card itself: one quiet line that grows as you write.
+// Saved with the session as entry.note, the same field the note sheet edits.
+function SessionNoteField({ entryIdx, value }) {
+  const update = useStore(s => s.update)
+  const ref = useRef(null)
+  const fit = () => { const el = ref.current; if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } }
+  useEffect(fit, [value])
+  const onChange = e => {
+    const v = e.target.value.slice(0, NOTE_MAX)
+    update(s => {
+      const en = s.active?.entries?.[entryIdx]
+      if (!en) return
+      if (v.trim()) en.note = v
+      else { delete en.note; delete en.notePin }
+    })
+  }
+  return <textarea ref={ref} className="exnote-in" rows={1} maxLength={NOTE_MAX} value={value}
+    aria-label={t('Note for this session')} placeholder={t('Note for this session')} onChange={onChange} />
+}
 
 function ExerciseBlock({ entryIdx, compact, dense, editing, onToggle, onToggleSide, onField, onAddSet, onRemoveSet, onAddWarmup, onRemoveSetAt, onCopySetAt, onStartTimed, onPairPrev, onPairNext, onSetRowRef, onProgressionSettings, onRest, onNoProg, routineUpdate, onSwap, onSwapBackup, onMachine, onMoveUp, onMoveDown, canMoveUp, canMoveDown, onRemoveExercise, busy }) {
   const S = useStore(s => s.S)
@@ -382,38 +401,29 @@ function ExerciseBlock({ entryIdx, compact, dense, editing, onToggle, onToggleSi
   // three under the sets and four more below the card is a single list you open once a session,
   // in groups since v1.3.11: what you change today, what you look up, the exercise's settings,
   // the order of the session, and Remove on its own at the end.
-  // The exercise's own rest, or the default it falls back to (lib/supersetFlow.js restSecFor).
-  const ownRest = ownExerciseRest(entry.target)
-  const restSub = ownRest === 0 ? t('No timer') : ownRest ? fmtRest(ownRest) : t('Default ({0})', fmtRest(S.restSec))
   const backups = (entry.target?.subs || []).map(id => EXIDX[id]).filter(b => b && b.id !== entry.id)
+  // Kept short on purpose: what you change on this exercise today, then what you look up, then
+  // Remove. The machine has its own button on the card, the rest timer and the exercise's
+  // settings live in the routine, and the order of the session is not something you change
+  // between two sets.
   const openMore = () => menuSheet({
     title: exerciseNameFor(ex),
     titleClass: exerciseNameClass(ex),
     sections: [
-      { title: t('Today'), items: [
+      { items: [
         onSwap && { icon: 'swap', label: t('Swap exercise'), onClick: onSwap, disabled: busy },
         // The slot's planned backups (#649), one tap each: the machine is taken, the plan says what next.
         ...(onSwapBackup ? backups.map(b => ({ icon: 'swap', label: t('Swap to {0}', exerciseNameText(b)), sub: t('Planned backup, same sets and reps'), onClick: () => onSwapBackup(b.id), disabled: busy })) : []),
-        onMachine && { icon: 'mapPin', label: t('Machine'), sub: gymNameOf(S, entry.gym) || t('No machine'), onClick: onMachine, disabled: busy },
         !simple && { icon: 'sunrise', label: t('Add warm-up set'), onClick: onAddWarmup },
-        { icon: 'note', label: entry.note ? t('Edit note') : t('Add note'), sub: entry.note || undefined, onClick: () => exerciseNoteSheet(entryIdx) },
-        !simple && onNoProg && { icon: 'chartLineSlash', label: t('Don’t count for progression'), sub: t('This exercise, this session only'), on: entry.noProg === true, onClick: () => onNoProg(entry.noProg !== true) },
-      ] },
-      { title: t('Look it up'), items: [
-        { icon: 'history', label: t('History'), sub: last ? t('Last time') + ' ' + fmtDate(last.d) : undefined, onClick: () => exerciseHistorySheet(entry.id) },
-        { icon: 'info', label: t('How to do it'), onClick: () => exerciseDetailSheet(ex) },
-      ] },
-      { title: t('Settings'), items: [
-        onProgressionSettings && { icon: 'slider', label: t('Exercise settings'), sub: guidance ? t(guidance.policyLabel) : t('Sets, reps, rest, progression'), onClick: onProgressionSettings },
-        onRest && { icon: 'timer', label: t('Rest timer'), sub: restSub, onClick: onRest },
         plateLoading && { icon: 'plate', label: t('Plate loading'), sub: loadSummary, onClick: () => barWeightSheet(entry.id, cfg) },
-        !simple && routineUpdate && { icon: 'clipboard', label: t('Update routine'), sub: routineUpdate.sub, onClick: routineUpdate.run },
       ] },
-      { title: t('Order and supersets'), items: [
-        !simple && onPairPrev && { icon: 'link', label: t('Make superset with previous'), onClick: onPairPrev },
-        !simple && onPairNext && { icon: 'link', label: t('Make superset with next'), onClick: onPairNext },
-        onMoveUp && { icon: 'chevronUp', label: t('Move up'), onClick: onMoveUp, disabled: busy || !canMoveUp },
-        onMoveDown && { icon: 'chevronDown', label: t('Move down'), onClick: onMoveDown, disabled: busy || !canMoveDown },
+      { items: [
+        { icon: 'info', label: t('How to do it'), onClick: () => exerciseDetailSheet(ex) },
+        { icon: 'history', label: t('History'), sub: last ? t('Last time') + ' ' + fmtDate(last.d) : undefined, onClick: () => exerciseHistorySheet(entry.id) },
+      ] },
+      { items: [
+        !simple && onNoProg && { icon: 'chartLineSlash', label: t('Don’t count for progression'), sub: t('This exercise, this session only'), on: entry.noProg === true, onClick: () => onNoProg(entry.noProg !== true) },
+        !simple && routineUpdate && { icon: 'clipboard', label: t('Update routine'), sub: routineUpdate.sub, onClick: routineUpdate.run },
       ] },
       { items: [
         onRemoveExercise && { icon: 'trash', label: t('Remove exercise'), onClick: onRemoveExercise, danger: true, disabled: busy },
@@ -677,14 +687,12 @@ function ExerciseBlock({ entryIdx, compact, dense, editing, onToggle, onToggleSi
       {thumb && <WorkoutThumb ex={ex} onExpand={() => update(s => { s.gifSize = 'full' })} />}
       <div style={{ flex: 1, minWidth: 0, fontSize: (compact || dense) ? 17 : 20, fontWeight: 600, letterSpacing: '-.02em', lineHeight: 1.2 }} className={exerciseNameClass(ex)}>{exerciseNameFor(ex)}</div>
       <div className="row" style={{ gap: 2, flex: 'none' }}>
-        {entry.note && <button className="iconbtn" aria-label={t('Note')} title={t('Note')} style={{ color: 'var(--acc)' }}
-          onClick={() => exerciseNoteSheet(entryIdx)}><Icon name="note" /></button>}
         <button className="iconbtn" aria-label={t('More')} title={t('More')} onClick={openMore}><Icon name="more" /></button>
       </div>
     </div>
     {/* The machine this exercise is done on (lib/gyms.js): a full-width button under the title, in
         every layout, so it cannot be missed. Weights open from the last time on it. */}
-    {!cardio && onMachine && <Button size="sm" variant="tinted" icon="mapPin" trailingIcon="chevronDown" disabled={busy}
+    {!cardio && onMachine && usesMachine(ex) && <Button size="sm" variant="tinted" icon="mapPin" trailingIcon="chevronDown" disabled={busy}
       style={{ width: '100%', justifyContent: 'space-between', marginBottom: 8 }} onClick={onMachine}>
       {gymNameOf(S, entry.gym) || t('Which machine?')}
     </Button>}
@@ -711,7 +719,6 @@ function ExerciseBlock({ entryIdx, compact, dense, editing, onToggle, onToggleSi
           chip — which halved the combined total for display — is gone: the split is no longer
           derived, it is what you enter. The tag only flags that this is per-side. */}
       {!cardio && isPerSide(cfg) && <span className="tag acc nocap"><Icon name="sides" />{t('Per side')}</span>}
-      {(ex.tg || ex.bp) && <span className="tag">{t(MUSCLE_NAME[ex.tg] || ex.tg || ex.bp)}</span>}
       {ex.eq && <span className="tag">{t(ex.eq)}</span>}
       {best > 0 && <span className="tag nocap">{t('Best:')} {fmtNum(best)} {S.unit}</span>}
     </div>
@@ -719,13 +726,14 @@ function ExerciseBlock({ entryIdx, compact, dense, editing, onToggle, onToggleSi
         own line and its own icon: the plan's instruction (cfg.note, from the routine), the
         standing fact about the movement (exNotes), and the message you pinned to yourself last
         session. Today's own note is edited through the button in the header and shown last. */}
-    {cfg.note && <div className="exnote">{cfg.note}</div>}
     {standingNote && <div className="exnote"><Icon name="info" style={{ fontSize: 13, marginInlineEnd: 5, verticalAlign: '-2px' }} />{standingNote}</div>}
     {pinnedNote && <div className="exnote" style={{ color: 'var(--yellow)' }}>
       <Icon name="pin" style={{ fontSize: 13, marginInlineEnd: 5, verticalAlign: '-2px' }} />
       {t('From {0}:', fmtDate(pinnedNote.d, true))} {pinnedNote.note}
     </div>}
-    {entry.note && <div className="exnote">{entry.note}</div>}
+    {/* Today's own note, typed right on the card: the routine's note is not repeated here. */}
+    {!editing && <SessionNoteField entryIdx={entryIdx} value={entry.note || ''} />}
+    {editing && entry.note && <div className="exnote">{entry.note}</div>}
     {planLine}
     {refLine}
     {!simple && guidance && onProgressionSettings && <button type="button" className={'progline' + (plan.kind === 'deload' ? ' warn' : '')}
@@ -2309,7 +2317,8 @@ function ActiveWorkout() {
     </div>}
     {!listMode && <div style={{ height: 10 }} />}
     {wc.exerciseButtons && listMode && A.entries.length > 0 && <div className="muted small" style={{ marginBottom: 6 }}>{t('Move, swap and remove below act on the exercise marked {0}.', t('Current'))}</div>}
-    <Button onClick={addExercise} icon="plus">{t('Add exercise')}</Button>
+    {/* Add exercise lives in the header's ⋯ while you train; here only when editing a saved one. */}
+    {(editing || A.entries.length === 0) && <Button onClick={addExercise} icon="plus">{t('Add exercise')}</Button>}
     {/* Editing a saved workout is where its photos and videos are added now: the detail sheet
         only shows them once there are some. They go straight onto the saved record. */}
     {editing && editedRecord(S) && <div style={{ marginTop: 14 }}><WorkoutMediaSection w={editedRecord(S)} hint /></div>}
@@ -2332,18 +2341,14 @@ function ActiveWorkout() {
       </div>
     </>}
     <div style={{ height: 10 }} />
-    {/* Wrapping up is when you know how the session went, so the note sits with the finish
-        button rather than somewhere in the header. */}
-    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-      <Button size="sm" icon="note" variant={A.note ? 'tinted' : undefined} onClick={sessionNoteSheet}>
-        {A.note ? t('Edit session note') : t('Add session note')}
-      </Button>
-    </div>
+    {/* Under the exercises, only Finish once everything is done (or Save while editing): the
+        header's Finish ends the session early and its ⋯ holds the session note. */}
     {(() => {
       const exDone = A.entries.filter(e => e.sets.length && e.sets.every(s => s.done)).length
       const allDone = A.entries.length > 0 && exDone === A.entries.length
-      return <button className={allDone ? 'btn primary' : 'btn ghost dim'} onClick={finishWorkout}>
-        {editing ? t('Save changes') : allDone ? t('Finish workout') : t('Finish workout early · {0} exercises', exDone + '/' + A.entries.length)}
+      if (!editing && !allDone) return null
+      return <button className="btn primary" onClick={finishWorkout}>
+        {editing ? t('Save changes') : t('Finish workout')}
       </button>
     })()}
     <div className="workout-end-spacer" />

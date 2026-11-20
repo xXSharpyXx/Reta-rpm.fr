@@ -21,7 +21,7 @@ function renderTop() {
   act(() => root.render(sheet.render(() => useUI.getState().closeSheet(sheet.id))))
   return host
 }
-const chips = host => [...host.querySelectorAll('.chips .chip')]
+const chips = host => [...host.querySelectorAll('.pk-filters .chip')]
 const chipByText = (host, text) => chips(host).find(b => b.textContent.trim() === text)
 const sameChip = host => chips(host).find(b => b.textContent.trim().startsWith('Same muscle'))
 const isOn = el => el.className.split(/\s+/).includes('on')
@@ -57,7 +57,7 @@ describe('sameMuscleFirst', () => {
 })
 
 describe('swap picker opens on the same muscle', () => {
-  it('mid-workout: Swap exercise starts on the target muscle, same equipment first, All goes back', () => {
+  it('mid-workout: Swap exercise starts on the target muscle, same equipment first, one tap on the chip goes back', () => {
     expect(CABLE_TRI).toBeTruthy()
     const S = structuredClone(DEF)
     S.active = {
@@ -71,7 +71,6 @@ describe('swap picker opens on the same muscle', () => {
     const chip = sameChip(host)
     expect(chip.textContent).toContain('Triceps')
     expect(isOn(chip)).toBe(true)
-    expect(isOn(chipByText(host, 'All'))).toBe(false)
 
     const listed = rows(host)
     expect(listed.length).toBeGreaterThan(1)
@@ -83,8 +82,8 @@ describe('swap picker opens on the same muscle', () => {
     // The exercise being swapped away is not offered as its own replacement.
     expect([...host.querySelectorAll('.list .item .tt')].map(x => x.textContent)).not.toContain(CABLE_TRI.n)
 
-    act(() => chipByText(host, 'All').click())
-    expect(isOn(chipByText(host, 'All'))).toBe(true)
+    act(() => sameChip(host).click())
+    expect(isOn(sameChip(host))).toBe(false)
     expect(rows(host).some(s => !s.startsWith('Triceps'))).toBe(true)
     // …and back again.
     act(() => sameChip(host).click())
@@ -104,10 +103,9 @@ describe('swap picker opens on the same muscle', () => {
     exercisePicker(vi.fn())
     const host = renderTop()
     expect(sameChip(host)).toBeUndefined()
-    expect(isOn(chipByText(host, 'All'))).toBe(true)
   })
 
-  it('opens on All when nothing else trains that muscle, so a swap never starts on an empty list', () => {
+  it('opens on everything when nothing else trains that muscle, so a swap never starts on an empty list', () => {
     const S = structuredClone(DEF)
     // Every catalogue muscle has body-weight work, which no equipment profile hides, so the empty
     // case is one of your own exercises on a muscle nothing else names.
@@ -115,7 +113,6 @@ describe('swap picker opens on the same muscle', () => {
     useStore.setState({ S, user: null })
     exercisePicker(vi.fn(), { like: 'cOnly' })
     const host = renderTop()
-    expect(isOn(chipByText(host, 'All'))).toBe(true)
     expect(sameChip(host)).toBeUndefined()
   })
 })
