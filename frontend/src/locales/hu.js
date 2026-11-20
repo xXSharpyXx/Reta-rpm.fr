@@ -1792,7 +1792,9 @@ export default {
   'Tap to plan something': 'Koppints, és tervezz valamit',
   'Drag to reorder': 'Húzd az átrendezéshez',
   'Drag to reorder. Tap the minus to delete.': 'Húzd az átrendezéshez. Koppints a mínuszra a törléshez.',
-  'Tap a routine to edit it. Reorder and delete are behind Edit.': 'Koppints egy rutinra a szerkesztéshez. Átrendezés és törlés a Szerkesztés alatt.',
+  'Tap a routine to see it. Reorder and delete are behind Edit.': 'Koppints egy rutinra a megtekintéshez. Az átrendezés és a törlés a Szerkesztés alatt van.',
+  'Edit routine': 'Rutin szerkesztése',
+  'Hold an exercise, then drag it where you want it.': 'Tarts lenyomva egy gyakorlatot, majd húzd oda, ahová szeretnéd.',
   'Pick one routine, or more to train them together.': 'Válassz egy rutint, vagy többet, hogy együtt edzd őket.',
   'Planned sets per week, from your plan.': 'Tervezett sorozatok hetente, a terved alapján.',
   // --- Settings (v1.3.11) ---

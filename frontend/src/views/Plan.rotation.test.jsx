@@ -48,7 +48,7 @@ const baseS = over => ({ routines, week: { 1: ['c'] }, dayPlan: {}, workouts: []
 
 let host, root
 beforeEach(() => {
-  localStorage.removeItem('gym_plan_view')
+  localStorage.setItem('gym_plan_view', 'schedule')
   host = document.createElement('div'); document.body.appendChild(host); root = createRoot(host)
   menuSheet.mockClear(); confirmSheet.mockClear(); mocks.nav = vi.fn()
 })
@@ -338,19 +338,24 @@ describe('Plan — Schedule extras', () => {
     expect(host.querySelector('.plan-link')).toBe(null)
   })
 
-  it('switches to Routines and remembers it for next time', () => {
+  it('opens on the routines, with the schedule one step away in the menu, remembered', () => {
+    localStorage.removeItem('gym_plan_view')
     mount()
-    const seg = label => [...host.querySelectorAll('.plan-views button')].find(b => b.textContent === label)
-    click(seg('Routines'))
-    expect(localStorage.getItem('gym_plan_view')).toBe('routines')
     expect(host.querySelector('.plan-mode')).toBe(null)
+    expect(host.querySelector('.plan-views')).toBe(null)
+    expect(host.querySelector('.plan-week')).toBe(null)
     expect(host.querySelector('.plan-routines')).toBeTruthy()
-    act(() => root.unmount()); root = createRoot(host)
-    act(() => root.render(<Plan />))
-    expect(seg('Routines').className).toContain('on')
-    click(seg('Schedule'))
+    click(byLabel('Plan options'))
+    const item = menuSheet.mock.calls.at(-1)[0].items.find(i => i.label === 'Schedule')
+    act(() => item.onClick())
     expect(localStorage.getItem('gym_plan_view')).toBe('schedule')
     expect(host.querySelector('.plan-mode')).toBeTruthy()
+    act(() => root.unmount()); root = createRoot(host)
+    act(() => root.render(<Plan />))
+    expect(host.querySelector('.plan-mode')).toBeTruthy()
+    click(byLabel('Back'))
+    expect(localStorage.getItem('gym_plan_view')).toBe('routines')
+    expect(host.querySelector('.plan-routines')).toBeTruthy()
   })
 
   it('one Plan menu holds share, print, import and the starter plans', () => {

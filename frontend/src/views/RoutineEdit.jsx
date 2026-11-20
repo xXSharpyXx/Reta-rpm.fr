@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { exOr } from '../lib/exercises.js'
@@ -99,6 +100,9 @@ function useRoutineReorder(routineIdentity, exercises, onDrop) {
   const suppressClickRef = useRef(false)
   const suppressTimerRef = useRef(null)
   const [drag, setDrag] = useState(null)
+  // While a row is held, every row shrinks to its exercise name, so the whole routine fits on
+  // screen and the held one can travel anywhere in it without a long scroll.
+  const [compact, setCompact] = useState(false)
   exercisesRef.current = exercises
   routineIdentityRef.current = routineIdentity
   onDropRef.current = onDrop
@@ -137,6 +141,7 @@ function useRoutineReorder(routineIdentity, exercises, onDrop) {
       clearFrame()
       gestureRef.current = null
       if (!gesture.active) return
+      setCompact(false)
       releaseCapture(gesture)
       suppressClickRef.current = true
       window.clearTimeout(suppressTimerRef.current)
@@ -169,7 +174,7 @@ function useRoutineReorder(routineIdentity, exercises, onDrop) {
       if (!geometry) { finish(gesture, false); return }
       const listRect = list.getBoundingClientRect()
       const remaining = geometry.filter(unit => unit.position !== gesture.sourcePosition)
-      const probeY = clamp(y, listRect.top, listRect.bottom)
+      const probeY = clamp(y - (gesture.probeShift || 0), listRect.top, listRect.bottom)
       const moved = Math.hypot(x - gesture.startX, y - gesture.startY) > ROUTINE_DRAG_SLOP
       const slot = moved ? remaining.reduce((count, unit) => count + (probeY > unit.center ? 1 : 0), 0) : gesture.sourcePosition
       const rawDelta = y - gesture.grabOffset - gesture.sourceTop
@@ -192,14 +197,34 @@ function useRoutineReorder(routineIdentity, exercises, onDrop) {
     const lift = gesture => {
       if (gestureRef.current !== gesture) return
       if (!matchesSnapshot(gesture)) { finish(gesture, false); return }
+      gesture.scrollHost = scrollHostFor(list)
+      // Shrink the rows to their names now, synchronously, so what is measured below is the
+      // compact list the finger drags through. The rows above the held one get shorter, so the
+      // page scrolls by what the held row moved, to keep it under the finger.
+      const heldRow = () => list.querySelector(`[data-routine-row][data-ex-index="${gesture.sourceIndex}"]`)?.getBoundingClientRect?.()
+      const was = heldRow()
+      flushSync(() => setCompact(true))
+      const now = heldRow()
+      if (was && now) {
+        const shift = now.top - was.top + (now.height - was.height) / 2
+        if (Math.abs(shift) > 1) {
+          try {
+            if (gesture.scrollHost === window) window.scrollBy(0, shift)
+            else gesture.scrollHost.scrollTop += shift
+          } catch { /* no scrolling here */ }
+        }
+      }
       const geometry = unitGeometry(list, exercisesRef.current)
       const source = geometry?.find(unit => unit.unit.includes(gesture.sourceIndex))
-      if (!source) { finish(gesture, false); return }
+      if (!source) { setCompact(false); finish(gesture, false); return }
       gesture.active = true; gesture.timer = null
       gesture.sourcePosition = source.position; gesture.sourceUnit = source.unit
       gesture.sourceTop = source.top; gesture.sourceBottom = source.bottom
       gesture.grabOffset = gesture.lastY - source.top; gesture.targetSlot = source.position
-      gesture.scrollHost = scrollHostFor(list)
+      // A finger the shrunk row moved out from under (the page could not scroll to make up for
+      // it) drags the row from where it is, and the drop slot follows the row, not the finger.
+      const off = gesture.lastY < source.top || gesture.lastY > source.bottom
+      gesture.probeShift = off ? gesture.lastY - (source.top + source.bottom) / 2 : 0
       gesture.captureTarget = gesture.downTarget
       try { gesture.captureTarget.setPointerCapture?.(gesture.pointerId) } catch { /* unsupported */ }
       suppressClickRef.current = true
@@ -297,6 +322,7 @@ function useRoutineReorder(routineIdentity, exercises, onDrop) {
       const gesture = gestureRef.current
       clearTimer(gesture); clearFrame(); gestureRef.current = null
       releaseCapture(gesture)
+      if (gesture?.active) setCompact(false)
       document.removeEventListener('pointerdown', onPointerDown)
       document.removeEventListener('touchmove', onTouchMove)
       document.removeEventListener('pointermove', onPointerMove)
@@ -319,7 +345,7 @@ function useRoutineReorder(routineIdentity, exercises, onDrop) {
   }
   // Whether a long press has picked a row up: the row's swipe stays out of the way while it has.
   const lifted = () => !!gestureRef.current?.active
-  return { listRef, drag, onClickCapture, lifted }
+  return { listRef, drag, compact, onClickCapture, lifted }
 }
 
 /**
@@ -465,7 +491,7 @@ export default function RoutineEdit() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" data-back="/plan" onClick={() => nav('/plan')} aria-label={t('Plan')}><Icon name="chevronLeft" /></button>
+      <button className="iconbtn" data-back={'/plan/s/' + id} onClick={() => nav('/plan/s/' + id)} aria-label={t('Back')}><Icon name="chevronLeft" /></button>
       <div style={{ flex: 1, margin: '0 12px' }}>
         <input className="input" defaultValue={r.name} style={{ fontWeight: 600, fontSize: 20, letterSpacing: '-.021em' }}
           onChange={e => update(s => { s.routines.find(x => x.id === id).name = e.target.value.trim() || t('Routine') })} />
@@ -511,7 +537,7 @@ export default function RoutineEdit() {
       <Button size="sm" variant="tinted" icon="plus" onClick={addExercise}>{t('Add exercise')}</Button>
     </div>
     {r.ex.length ? <div ref={reorder.listRef} onClickCapture={reorder.onClickCapture}
-      className={'list routine-list' + (reorder.drag ? ' is-reordering' : '')}>{r.ex.map((e, i) => {
+      className={'list routine-list' + (reorder.drag ? ' is-reordering' : '') + (reorder.compact ? ' is-compact' : '')}>{r.ex.map((e, i) => {
       // An unresolvable id is shown rather than skipped — hiding it left an entry you
       // could neither see nor delete, but that still turned up in the workout.
       const ex = exOr(e.id)
@@ -537,9 +563,11 @@ export default function RoutineEdit() {
           <button type="button" className="grow item-open" data-row-open><span className={`tt ${exerciseNameClass(ex)}`}>{exerciseNameFor(ex)}</span><span className="ss">{exLine(e, S.unit, speedUnitOf(S))}</span>
             {e.note && <span className="small dim" style={{ marginTop: 2 }}>{e.note}</span>}</button>
           {noEquip && <span className="tag" style={{ color: 'var(--orange)', borderColor: 'var(--orange)' }} title={t('Needs {0}, which isn’t in your active profile', t(ex.eq))}><Icon name="warning" /></span>}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none', alignItems: 'center' }}>
+          <div className="routine-row-acts" style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none', alignItems: 'center' }}>
             {i > 0 && <button className={'iconbtn' + (linkedPrev ? ' on-ss' : '')} title={t('Superset with exercise above')} style={{ width: 32, height: 28, borderRadius: 8, fontSize: 15 }} onClick={ev => { ev.stopPropagation(); toggleLink(i) }}><Icon name="link" /></button>}
-            <div style={{ display: 'flex', gap: 2 }}>
+            {/* Hold and drag is the way to reorder on screen; these stay for a keyboard and a
+                screen reader, out of sight until one of them has the focus. */}
+            <div className="routine-moves" style={{ display: 'flex', gap: 2 }}>
               <button className="iconbtn" aria-label={t('Move up')} title={leavesUp ? t('Move out of the superset') : t('Move up')} disabled={!moveRoutineEntry(r.ex, i, -1)} style={{ width: 28, height: 24, borderRadius: 7, fontSize: 12 }} onClick={ev => { ev.stopPropagation(); move(i, -1) }}><Icon name="chevronUp" /></button>
               <button className="iconbtn" aria-label={t('Move down')} title={leavesDown ? t('Move out of the superset') : t('Move down')} disabled={!moveRoutineEntry(r.ex, i, 1)} style={{ width: 28, height: 24, borderRadius: 7, fontSize: 12 }} onClick={ev => { ev.stopPropagation(); move(i, 1) }}><Icon name="chevronDown" /></button>
             </div>
@@ -582,6 +610,7 @@ export default function RoutineEdit() {
       </div>
     })()}
 
+    {r.ex.length > 1 && <div className="small dim row" style={{ margin: '10px 2px 0', gap: 5 }}><Icon name="grip" style={{ fontSize: 13 }} />{t('Hold an exercise, then drag it where you want it.')}</div>}
     <div className="small dim row" style={{ margin: '10px 2px', gap: 5 }}><Icon name="link" style={{ fontSize: 13 }} />{t('Tap the link button on an exercise to superset it with the one above. You’ll do them back-to-back.')}</div>
     <Button onClick={() => {
       const copy = copyRoutine(r, t('Copy'))

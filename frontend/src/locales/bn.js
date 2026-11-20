@@ -1831,7 +1831,9 @@ export default {
   'Tap to plan something': 'কিছু প্ল্যান করতে ট্যাপ করুন',
   'Drag to reorder': 'ক্রম বদলাতে টেনে সরান',
   'Drag to reorder. Tap the minus to delete.': 'ক্রম বদলাতে টেনে সরান। মুছতে মাইনাসে ট্যাপ করুন।',
-  'Tap a routine to edit it. Reorder and delete are behind Edit.': 'সম্পাদনা করতে একটি রুটিনে ট্যাপ করুন। ক্রম বদলানো ও মুছে ফেলা “সম্পাদনা”-র ভেতরে।',
+  'Tap a routine to see it. Reorder and delete are behind Edit.': 'দেখতে একটি রুটিনে ট্যাপ করুন। ক্রম বদলানো ও মুছে ফেলা "সম্পাদনা"-র ভেতরে।',
+  'Edit routine': 'রুটিন সম্পাদনা',
+  'Hold an exercise, then drag it where you want it.': 'একটি ব্যায়াম চেপে ধরে রাখুন, তারপর যেখানে চান টেনে নিন।',
   'Pick one routine, or more to train them together.': 'একটি রুটিন বেছে নিন, অথবা একসাথে ট্রেন করতে একাধিক।',
   'Planned sets per week, from your plan.': 'আপনার প্ল্যান অনুযায়ী প্রতি সপ্তাহে পরিকল্পিত সেট।',
   // --- Settings (v1.3.11) ---

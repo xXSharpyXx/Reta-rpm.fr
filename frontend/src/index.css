@@ -579,6 +579,22 @@ h4.sec{
   .routine-grip:hover{color:var(--label-2)}
 }
 .routine-list.is-reordering,.routine-list.is-reordering *{cursor:grabbing}
+/* Hold to reorder: every row shrinks to its exercise name while one is held, so the routine
+   fits on screen and the held row can go anywhere in it (RoutineEdit.jsx useRoutineReorder). */
+.routine-list.is-compact{gap:6px}
+.routine-list.is-compact .item{min-height:0;padding:9px 12px}
+.routine-list.is-compact .thumb,.routine-list.is-compact .item .ss,.routine-list.is-compact .item .small,
+.routine-list.is-compact .tag,.routine-list.is-compact .routine-row-acts,.routine-list.is-compact .ss-label{display:none!important}
+/* The routine's own page (RoutineView.jsx): the sets the next session opens at, under each exercise. */
+.routine-view>.btn{width:100%;margin-bottom:6px}
+.routine-view-ex{align-items:flex-start}
+.routine-view-sets{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:3px}
+.routine-view-sets li{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--label)}
+.routine-view-sets li>span:first-child{color:var(--label-2)}
+.routine-view-sets li.warm{color:var(--label-2)}
+.routine-view-sets .num{font-variant-numeric:tabular-nums}
+/* The move buttons are for a keyboard and a screen reader: on screen, hold and drag. */
+.routine-moves:not(:focus-within){position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .thumb{width:50px;height:50px;border-radius:9px;object-fit:cover;background:#fff;flex:none}
 /* exercise pictures are decoration inside tappable rows/cards: no save-image callout on
    a long press and no drag ghost when a scroll starts on the picture */

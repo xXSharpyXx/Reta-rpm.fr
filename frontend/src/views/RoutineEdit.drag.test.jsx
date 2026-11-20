@@ -449,3 +449,29 @@ describe('reorderRoutineUnit', () => {
     expect(items[0].sg).toBe('pair'); expect(items[1].sg).toBe('pair'); expect(items[3].sg).toBeUndefined()
   })
 })
+
+// A first drop in this file is the one the save-count test above measures, so these come last.
+describe('hold to reorder, compact', () => {
+  it('shrinks every row to its name while one is held, and back on release', () => {
+    const layout = mount([configured('1001', { note: 'slow' }), configured('1002'), configured('1003')])
+    const list = host.querySelector('.routine-list')
+    expect(list.classList.contains('is-compact')).toBe(false)
+    const row = rows()[1], item = row.querySelector('.item')
+    pointer(item, 'pointerdown', { y: layout.centers[1] })
+    act(() => vi.advanceTimersByTime(ROUTINE_LONG_PRESS_MS - 1))
+    expect(list.classList.contains('is-compact')).toBe(false)
+    act(() => vi.advanceTimersByTime(1))
+    expect(list.classList.contains('is-compact')).toBe(true)
+    pointer(item, 'pointermove', { y: layout.centers[2] + 10 })
+    pointer(item, 'pointerup', { y: layout.centers[2] + 10 })
+    expect(list.classList.contains('is-compact')).toBe(false)
+    expect(exercises().map(e => e.id)).toEqual(['1001', '1003', '1002'])
+  })
+
+  it('has no arrows on screen: the move buttons stay for a keyboard only', () => {
+    mount([configured('1001'), configured('1002')])
+    const moves = host.querySelectorAll('.routine-moves')
+    expect(moves).toHaveLength(2)
+    for (const m of moves) expect(m.querySelectorAll('button[aria-label="Move up"], button[aria-label="Move down"]')).toHaveLength(2)
+  })
+})

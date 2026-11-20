@@ -1782,7 +1782,9 @@ export default {
   'Tap to plan something': '點一下來安排訓練',
   'Drag to reorder': '拖曳調整順序',
   'Drag to reorder. Tap the minus to delete.': '拖曳可調整順序。點減號可刪除。',
-  'Tap a routine to edit it. Reorder and delete are behind Edit.': '點課表即可編輯。調整順序和刪除在「編輯」裡。',
+  'Tap a routine to see it. Reorder and delete are behind Edit.': '點一下例行訓練即可查看。重新排序和刪除在「編輯」裡。',
+  'Edit routine': '編輯例行訓練',
+  'Hold an exercise, then drag it where you want it.': '按住一個動作，再拖到你想要的位置。',
   'Pick one routine, or more to train them together.': '選一個課表，或選多個一起練。',
   'Planned sets per week, from your plan.': '依你的計畫，每週計畫的組數。',
   // --- Settings (v1.3.11) ---

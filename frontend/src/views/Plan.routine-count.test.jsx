@@ -34,6 +34,7 @@ vi.mock('../sheets.jsx', () => ({
 
 let host, root
 beforeEach(() => {
+  localStorage.setItem('gym_plan_view', 'schedule')
   mocks.S = {
     unit: 'kg', workouts: [], exWeights: {}, week: {}, dayPlan: {},
     routines: [{ id: 'r1', name: 'Push', emoji: null, ex: [] }, { id: 'r2', name: 'Pull', emoji: null, ex: [] }],

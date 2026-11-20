@@ -1800,7 +1800,9 @@ export default {
   'Tap to plan something': 'แตะเพื่อวางแผน',
   'Drag to reorder': 'ลากเพื่อจัดลำดับ',
   'Drag to reorder. Tap the minus to delete.': 'ลากเพื่อจัดลำดับ แตะเครื่องหมายลบเพื่อลบ',
-  'Tap a routine to edit it. Reorder and delete are behind Edit.': 'แตะรูทีนเพื่อแก้ไข การจัดลำดับและการลบอยู่ในแก้ไข',
+  'Tap a routine to see it. Reorder and delete are behind Edit.': 'แตะรูทีนเพื่อดู การเรียงลำดับและการลบอยู่ในแก้ไข',
+  'Edit routine': 'แก้ไขรูทีน',
+  'Hold an exercise, then drag it where you want it.': 'กดค้างที่ท่าออกกำลังกาย แล้วลากไปวางตรงที่ต้องการ',
   'Pick one routine, or more to train them together.': 'เลือกหนึ่งรูทีน หรือหลายรูทีนเพื่อฝึกด้วยกัน',
   'Planned sets per week, from your plan.': 'เซ็ตที่วางแผนต่อสัปดาห์ จากแผนของคุณ',
   // --- Settings (v1.3.11) ---

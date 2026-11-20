@@ -46,13 +46,13 @@ const layOut = () => rows().forEach((row, i) => {
 const pointer = (el, type, y) => act(() => { el.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 1, button: 0, clientY: y })) })
 
 describe('routine order', () => {
-  it('shows no move buttons outside Edit, and the days a routine is on', () => {
+  it('shows no move buttons outside Edit, and no weekdays on the rows', () => {
     mount()
     expect(names()).toEqual(['Push A', 'Pull A', 'Legs A'])
     expect(host.querySelector('button[aria-label="Move up"]')).toBe(null)
     expect(host.querySelector('button[aria-label="Move down"]')).toBe(null)
     expect(handles()).toEqual([])
-    expect(rows()[1].querySelector('.ss').textContent).toBe('1 exercise · Mo')
+    expect(rows()[1].querySelector('.ss').textContent).toBe('1 exercise')
   })
 
   it('Edit shows a handle and a delete button per row; tapping a row then opens nothing', () => {
