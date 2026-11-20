@@ -1786,7 +1786,9 @@ export default {
   'Tap to plan something': 'Натисни, щоб щось запланувати',
   'Drag to reorder': 'Перетягни, щоб змінити порядок',
   'Drag to reorder. Tap the minus to delete.': 'Перетягни, щоб змінити порядок. Натисни мінус, щоб видалити.',
-  'Tap a routine to edit it. Reorder and delete are behind Edit.': 'Натисни на програму, щоб змінити її. Порядок і видалення в розділі Змінити.',
+  'Tap a routine to see it. Reorder and delete are behind Edit.': 'Натисни на програму, щоб відкрити її. Порядок і видалення в розділі «Змінити».',
+  'Edit routine': 'Змінити програму',
+  'Hold an exercise, then drag it where you want it.': 'Утримуй вправу й перетягни її, куди потрібно.',
   'Pick one routine, or more to train them together.': 'Вибери одну програму або кілька, щоб робити їх разом.',
   'Planned sets per week, from your plan.': 'Заплановані підходи на тиждень за твоїм планом.',
   // --- Settings (v1.3.11) ---

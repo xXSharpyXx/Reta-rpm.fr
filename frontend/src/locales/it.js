@@ -1789,7 +1789,9 @@ export default {
   'Tap to plan something': 'Tocca per pianificare qualcosa',
   'Drag to reorder': 'Trascina per riordinare',
   'Drag to reorder. Tap the minus to delete.': 'Trascina per riordinare. Tocca il meno per eliminare.',
-  'Tap a routine to edit it. Reorder and delete are behind Edit.': 'Tocca una routine per modificarla. Riordina ed elimina sono sotto Modifica.',
+  'Tap a routine to see it. Reorder and delete are behind Edit.': 'Tocca una routine per vederla. Riordina ed elimina sono in Modifica.',
+  'Edit routine': 'Modifica routine',
+  'Hold an exercise, then drag it where you want it.': 'Tieni premuto un esercizio, poi trascinalo dove vuoi.',
   'Pick one routine, or more to train them together.': 'Scegli una routine, o più di una per farle insieme.',
   'Planned sets per week, from your plan.': 'Serie pianificate a settimana, dal tuo piano.',
   // --- Settings (v1.3.11) ---

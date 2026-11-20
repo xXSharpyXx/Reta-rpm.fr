@@ -29,12 +29,13 @@ import {
   chooseRotation, chooseFixedWeek, sequenceOf, isSimpleSequence, segmentAt, REST,
 } from '../lib/rotation.js'
 
-// Plan has two views (v1.3.11): Schedule (how you train, and when) and Routines (what you
-// train). The last one you looked at comes back: a per-device convenience, never synced, so it
-// lives in this browser's storage and not in S.
+// Plan opens on the routines (what you train). The schedule (how you train, and when: the
+// weekdays or the loop) is one step away, behind the header menu, with a back button home. The
+// one you looked at last comes back: a per-device convenience, never synced, so it lives in this
+// browser's storage and not in S.
 export const PLAN_VIEW_KEY = 'gym_plan_view'
 const readView = () => {
-  try { return localStorage.getItem(PLAN_VIEW_KEY) === 'routines' ? 'routines' : 'schedule' } catch { return 'schedule' }
+  try { return localStorage.getItem(PLAN_VIEW_KEY) === 'schedule' ? 'schedule' : 'routines' } catch { return 'routines' }
 }
 
 /* Undo for Plan's two removals (v1.3.11). Both go through the store's normal update, so sync
@@ -150,6 +151,7 @@ export default function Plan() {
 
   // Share, print, import and starter plans: one menu behind the header button, so the
   // two views below are only about the plan itself.
+  const mode = scheduleModeOf(S)
   const openMenu = () => {
     const has = planHasRoutines(S)
     menuSheet({
@@ -160,26 +162,27 @@ export default function Plan() {
         { icon: 'note', label: t('Print / Save as PDF'), disabled: !has, onClick: printWholePlan },
         { icon: 'download', label: t('Import a plan file'), onClick: () => fileRef.current?.click() },
         { icon: 'clipboard', label: t('Load starter plan'), onClick: starterPlanSheet },
+        ...(view === 'routines' ? [{ icon: 'calendar', label: t('Schedule'), sub: mode === 'rotation' ? t('Your routines in a loop') : t('Your weekly routine'), onClick: () => setView('schedule') }] : []),
       ],
     })
   }
   const pickFile = ev => { const f = ev.target.files[0]; ev.target.value = ''; importPlanFile(f) }
 
-  const mode = scheduleModeOf(S)
+  const schedule = view === 'schedule'
 
   return <div className="narrow plan">
     <div className="hdr">
       <SeasonDeco spot="header-bats" />
-      <div><h1>{t('Plan')}</h1><div className="sub">{mode === 'rotation' ? t('Your routines in a loop') : t('Your weekly routine')}</div></div>
+      {schedule && <button className="iconbtn" onClick={() => setView('routines')} aria-label={t('Back')}><Icon name="chevronLeft" /></button>}
+      <div style={schedule ? { flex: 1, margin: '0 12px' } : undefined}><h1>{schedule ? t('Schedule') : t('Plan')}</h1>
+        {schedule && <div className="sub">{mode === 'rotation' ? t('Your routines in a loop') : t('Your weekly routine')}</div>}</div>
       <div className="hdr-actions">
         {showCoach && <Button size="sm" variant="tinted" icon="sparkles" onClick={() => nav('/coach')}>{t('Coach')}</Button>}
         <button className="iconbtn" onClick={openMenu} aria-label={t('Plan options')} title={t('Plan options')}><Icon name="share" /></button>
       </div>
     </div>
     <input ref={fileRef} type="file" accept="application/json,.json" onChange={pickFile} hidden />
-    <Segmented className="plan-views" value={view} onChange={setView}
-      options={[{ value: 'schedule', label: t('Schedule') }, { value: 'routines', label: t('Routines') }]} />
-    {view === 'routines'
+    {!schedule
       ? <Routines S={S} update={update} nav={nav} />
       : <Schedule S={S} update={update} nav={nav} mode={mode} />}
   </div>
@@ -441,10 +444,7 @@ function Routines({ S, update, nav }) {
       update(s => { if (s.routines.some(x => x.id === copy.id)) deleteRoutine(s, copy.id) })
     } })
   }
-  // The weekdays a routine is on, short, in the order the week runs.
-  const order = weekOrder(weekStartOf(S))
-  const daysOf = id => order.filter(d => [].concat(S.week[d] || []).includes(id)).map(d => t(DAYS[d]))
-  const sub = r => [exCount(r.ex.length), daysOf(r.id).join(', ')].filter(Boolean).join(' · ')
+  const sub = r => exCount(r.ex.length)
 
   return <>
     <div className="row between plan-sec-h plan-routines-bar">
@@ -464,7 +464,7 @@ function Routines({ S, update, nav }) {
               {...reorder.handle(i)}><Icon name="chevronsUpDown" /></button>}
           </div>)}</div>
         : <div className="list routine-list plan-routines">{routines.map(r => {
-          const row = <div key={r.id} className="item plan-routine" {...tappable(() => nav('/plan/r/' + r.id))}>
+          const row = <div key={r.id} className="item plan-routine" {...tappable(() => nav('/plan/s/' + r.id))}>
             <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
             <div className="grow"><div className="tt">{r.name}</div><div className="ss">{sub(r)}</div></div>
             <MiniBodyMap routines={[r]} body={S.body} />
@@ -478,7 +478,7 @@ function Routines({ S, update, nav }) {
               flash={flash?.id === r.id ? flash.n : 0}>{row}</SwipeRow>
             : row
         })}</div>}
-      <p className="sect-f">{edit ? t('Drag to reorder. Tap the minus to delete.') : t('Tap a routine to edit it. Reorder and delete are behind Edit.')}</p>
+      <p className="sect-f">{edit ? t('Drag to reorder. Tap the minus to delete.') : t('Tap a routine to see it. Reorder and delete are behind Edit.')}</p>
     </> : <>
       <div className="empty"><div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Make one, or grab the starter plan to get going.')}</div>
       <Button icon="clipboard" onClick={starterPlanSheet}>{t('Load starter plan')}</Button>
