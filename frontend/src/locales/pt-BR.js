@@ -1688,9 +1688,6 @@ export const PT_BR_OVERRIDES = {
   'Neon': 'Neon',
   'Pick your look': 'Escolha seu visual',
   'You can change it any time in Settings.': 'Você pode mudar quando quiser nas Configurações.',
-}
-
-export default { ...pt, ...PT_BR_OVERRIDES,
   'Apply': 'Aplicar',
   'Edit next time': 'Editar para a próxima vez',
   'Keep {0}': 'Manter {0}',
@@ -1699,3 +1696,5 @@ export default { ...pt, ...PT_BR_OVERRIDES,
   'Your choice': 'Sua escolha',
   'Your choice at the end of the last session.': 'Sua escolha no fim do último treino.',
 }
+
+export default { ...pt, ...PT_BR_OVERRIDES }
