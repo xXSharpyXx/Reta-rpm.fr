@@ -210,6 +210,39 @@ export function applyTemplate(routine, ex) {
 }
 
 /**
+ * The routine's exercises for the next session, as the finish recap proposes them: the routine as it
+ * is, with what the session changed (`changes`, from templateChanges) applied only where asked.
+ * `drop`: skipped exercises to take out (they stay otherwise). `add`: new exercises to put in, with
+ * the setup they were done with (they stay out otherwise). `today`: take the session's order and
+ * set counts; a skipped exercise that stays is slotted back after its neighbour in the routine.
+ * Returns a new list; the routine is not touched.
+ */
+export function planEx(routine, changes, { drop = [], add = [], today = false } = {}) {
+  const base = (routine?.ex || []).filter(x => x?.id != null)
+  const clone = x => structuredClone(x)
+  const added = new Set(changes?.added || [])
+  const wantAdded = x => !added.has(x.id) || add.includes(x.id)
+  if (!today) {
+    const kept = base.filter(x => !drop.includes(x.id)).map(clone)
+    const fresh = (changes?.ex || []).filter(x => added.has(x.id) && add.includes(x.id)).map(clone)
+    return groupIds([...kept, ...fresh])
+  }
+  const list = (changes?.ex || []).filter(wantAdded).map(clone)
+  for (const id of changes?.removed || []) {
+    if (drop.includes(id)) continue
+    const at = base.findIndex(x => x.id === id)
+    if (at < 0) continue
+    let place = 0
+    for (let j = at - 1; j >= 0; j--) {
+      const k = list.findIndex(x => x.id === base[j].id)
+      if (k >= 0) { place = k + 1; break }
+    }
+    list.splice(place, 0, clone(base[at]))
+  }
+  return groupIds(list)
+}
+
+/**
  * What a template change (templateChanges) amounts to, counted for the one-line question at the
  * finish: exercises added and left out, sets added and removed over the exercises kept, and
  * whether the order or the supersets moved.

@@ -2328,3 +2328,21 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
 .gym-radius-row>:first-child{flex:1}
 .gym-radius-val{min-width:64px;text-align:end;font-variant-numeric:tabular-nums;color:var(--label-2)}
 .gym-actions{display:flex;flex-direction:column;gap:10px;margin:4px 0 30px}
+
+/* The finish plan page (components/FinishPlan.jsx): the workout's set rows, with the old value small
+   and struck at the corner of the cell and the new one in green. */
+.plan-card{margin-bottom:12px}
+.plan-val{position:relative}
+.plan-val .was{position:absolute;inset-inline-start:3px;top:-1px;font-size:10px;line-height:1;color:var(--label-2);text-decoration:line-through;pointer-events:none}
+.plan-val input{color:var(--green)}
+.plan-fixed{display:block;text-align:center;font-weight:600}
+.plan-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+.plan-switch{padding:8px 0 2px}
+.setrow .n.warm,.setrow .n.fail{pointer-events:none}
+/* The "+" at the end of the exercise chips: dashed, so it reads as a place to add, not an exercise. */
+.wchip.add{background:transparent;box-shadow:inset 0 0 0 1.5px var(--acc);color:var(--acc);min-width:28px;padding:0}
+.wchip.add .icn{width:14px;height:14px}
+
+/* The Workouts page's start card and its two glued buttons (views/Plan.jsx). */
+.today-card .today-other{width:100%;margin-top:8px}
+.plan-views{margin:14px 0 10px}

@@ -18,7 +18,7 @@ import { t } from '../lib/i18n.js'
 // Functions, so each word is a literal t() call the string checks can see.
 const STATE_WORD = { done: () => t('Finished'), partial: () => t('Started'), todo: () => t('Not started yet') }
 
-export default function WorkoutChips({ entries, cur, onPick }) {
+export default function WorkoutChips({ entries, cur, onPick, onAdd }) {
   const strip = useRef(null)
   const chips = exerciseChips(entries, cur)
   const curKey = chips.find(c => c.current)?.key
@@ -42,5 +42,7 @@ export default function WorkoutChips({ entries, cur, onPick }) {
         <span>{c.n}</span>{c.unit.length > 1 && <Icon name="link" />}
       </button>
     })}
+    {/* Under the last number: one more exercise, without the header's menu. */}
+    {onAdd && <button type="button" className="wchip add" aria-label={t('Add exercise')} title={t('Add exercise')} onClick={onAdd}><Icon name="plus" /></button>}
   </nav>
 }

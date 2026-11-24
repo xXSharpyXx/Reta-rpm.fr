@@ -74,6 +74,8 @@ const convEntry = (e, from, to) => {
     ...(e.target ? { target: convTarget(e.target, from, to) } : {}),
     // The plan the entry was built from (lib/session-start.js) carries the routine's weight too.
     ...(e.planned ? { planned: convTarget(e.planned, from, to) } : {}),
+    // What the lifter chose at the end of the session for the next one (lib/next-choice.js).
+    ...(e.next && typeof e.next === 'object' && e.next.w != null ? { next: { ...e.next, w: convertWeight(e.next.w, from, to) } } : {}),
     ...(Array.isArray(e.sets) ? { sets: e.sets.map(s => convSet(s, from, to)) } : {}),
   }
 }

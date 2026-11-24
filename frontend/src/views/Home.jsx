@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutines, effectiveRoutineIds, nextTrainingDay, streakWeeks, lastBW, setsDoneActive, workoutDay, sessionVolume } from '../lib/history.js'
 import { fmtNum, fmtVol, fmtDate, todayISO, isoOf, weekStartOf, weekDayOffset, durPart, DAYS, DAYN } from '../lib/format.js'
+import { swipeDays, shiftDay, weekOffsetOf } from '../lib/day-swipe.js'
 import { t, tn, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, starterPlanSheet, bwDeltaColor, weighInsSheet, workoutDetailSheet, exerciseHistorySheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
@@ -36,6 +37,19 @@ export default function Home() {
   const [weekOffset, setWeekOffset] = useState(0)
   // The day the panel under the week shows: today until another day is tapped.
   const [selDay, setSelDay] = useState(todayISO)
+  // A sideways swipe on the week and the day under it moves the picked day by one (lib/day-swipe.js).
+  const swipeFrom = useRef(null)
+  const onSwipeStart = e => { const p = e.touches?.[0]; swipeFrom.current = e.touches?.length === 1 && p ? { x: p.clientX, y: p.clientY } : null }
+  const onSwipeEnd = e => {
+    const from = swipeFrom.current, p = e.changedTouches?.[0]
+    swipeFrom.current = null
+    if (!from || !p) return
+    const step = swipeDays(p.clientX - from.x, p.clientY - from.y)
+    if (!step) return
+    const next = shiftDay(selDay, step)
+    setSelDay(next)
+    setWeekOffset(weekOffsetOf(next, todayISO(), weekStartOf(useStore.getState().S)))
+  }
 
   const today = new Date()
   // A weekday can hold several routines: today's, for the next-session line on a rest day.
@@ -87,7 +101,7 @@ export default function Home() {
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={trouble ? t('Settings') + ', ' + t('Connection problem') : t('Settings')}><Icon name="gear" />{trouble && <span className="tab-dot" aria-hidden="true" />}</button>
     </div>
 
-    <div className="card">
+    <div className="card" onTouchStart={onSwipeStart} onTouchEnd={onSwipeEnd}>
       {/* A planner's week runs by order, not by weekday, so its progress row stands in for the
           seven dots (components/QueueRow.jsx). The today row below stays as it is: the queue's
           next session reaches it through effectiveRoutineIds like any planned routine. */}

@@ -37,6 +37,13 @@ describe('the snapshot', () => {
     expect(JSON.stringify(snap)).not.toMatch(/\.(gif|webp|png|jpg|mp4)|media|img/i)
   })
 
+  it('sends the rest with its length, so the watch draws its ring from the real start', () => {
+    const snap = buildSnapshot(state(), { timer: { endsAt: 1760000000000, total: 90 } })
+    expect(snap.active.rest).toEqual({ endsAt: 1760000000000, total: 90 })
+    // an older timer without a length still sends its end
+    expect(buildSnapshot(state(), { timer: { endsAt: 1760000000000 } }).active.rest).toEqual({ endsAt: 1760000000000 })
+  })
+
   it('says there is no workout when none runs, and no rest when it is paused or over', () => {
     expect(buildSnapshot({ unit: 'kg' })).toEqual({ v: SNAPSHOT_VERSION, unit: 'kg', restSec: 0, active: null, ready: null })
     expect(buildSnapshot(state(), { timer: { endsAt: 5, paused: true } }).active.rest).toBeNull()

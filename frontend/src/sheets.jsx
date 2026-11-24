@@ -27,6 +27,7 @@ import ExerciseAliasesEditor, { ExerciseAliasesField, ExerciseAliasesLink } from
 import { SG_NAME_MAX } from './lib/superset-meta.js'
 import { REST_MAX, fmtRest, restWheelValue } from './lib/duration.js'
 import Icon from './components/Icon.jsx'
+import FinishPlan, { planOf } from './components/FinishPlan.jsx'
 import { SeasonDeco } from './components/Seasonal.jsx'
 import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, NumberField, MultiSelectRow } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
@@ -56,7 +57,7 @@ import { clampIncline, inclineFits, INCLINE_MAX, INCLINE_STEP } from './lib/incl
 import { buildCompletedWorkout, sessionEnd } from './lib/finish-workout.js'
 import { isWarmupRow, hasCompletedWork } from './lib/workout-model.js'
 import { ownExerciseRest } from './lib/supersetFlow.js'
-import { saveSessionAsRoutine, templateChanges, applyTemplate, templateChangeCounts } from './lib/session-routines.js'
+import { saveSessionAsRoutine, templateChanges } from './lib/session-routines.js'
 import { cleanPlace, placeOf, placesOf, PLACE_MAX } from './lib/workout-place.js'
 import { repeatSessionEntries } from './lib/session-repeat.js'
 import { swapActiveExercise } from './lib/active-exercise-swap.js'
@@ -65,7 +66,6 @@ import { useAutoMore } from './lib/use-auto-more.js'
 import { isFav, toggleFav, sortFavouritesFirst, sortYoursFirst } from './lib/favourites.js'
 import { buildSessionEntries, buildPlannedEntry, buildSessionEntry, plannedConfigOf } from './lib/session-start.js'
 import { isSimple } from './lib/simple.js'
-import { finishCompare, finishCardio } from './lib/finish-compare.js'
 import { workoutFit, fitFileName } from './lib/fit-export.js'
 import { joinSessionNoProg } from './lib/session-noprog.js'
 import { buildCombinedEntries, deriveSessionName } from './lib/session-merge.js'
@@ -2701,6 +2701,35 @@ function DayAssign({ day, close }) {
 }
 export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day} close={close} />)
 
+// The same assignment from the routine's side: the week's days, ticked where the routine is on.
+function RoutineDays({ routineId, close }) {
+  const st = useStore(s => s.S)
+  const r = st.routines.find(x => x.id === routineId)
+  const ws = weekStartOf(st)
+  const toggle = day => update(s => {
+    const ids = [].concat(s.week[day] || [])
+    const next = ids.includes(routineId) ? ids.filter(x => x !== routineId) : [...ids, routineId]
+    if (next.length) s.week[day] = next; else delete s.week[day]
+  })
+  if (!r) return null
+  return <>
+    <h3 style={{ marginBottom: 2 }}>{r.name}</h3>
+    <div className="muted small" style={{ marginBottom: 10 }}>{t('Pick the days this routine is planned on.')}</div>
+    <div className="list menu-list" data-routine-days>
+      {weekOrder(ws).map(d => {
+        const on = [].concat(st.week[d] || []).includes(routineId)
+        return <div key={d} className="item menu-item" data-day={d} aria-pressed={on} {...tappable(() => toggle(d))}>
+          <div className="grow"><div className="tt">{t(DAYN[d])}</div></div>
+          <span className={'menu-on' + (on ? ' is-on' : '')}><Icon name="check" /></span>
+        </div>
+      })}
+    </div>
+    <div style={{ height: 12 }} />
+    <Button variant="primary" onClick={close}>{t('Done')}</Button>
+  </>
+}
+export const routineDaysSheet = routineId => ui().openSheet(close => <RoutineDays routineId={routineId} close={close} />)
+
 /* ============================ workout detail ============================ */
 // Correcting when a saved session happened: typed in from another app, or logged on the wrong
 // day. Only its place in history moves — the sets, the volume and the notes are the record, and
@@ -3538,48 +3567,6 @@ export function setsLine(sets, unit) {
   }
   return sets.map(s => (s.w > 0 ? fmtNum(s.w) + '×' : '') + reps(s)).join(' · ')
 }
-// The finish asks, per routine of the workout, whether what was just done becomes that routine's
-// template (owner, 2026-11-17): the exercises done, in their order, with their set counts and
-// supersets (lib/session-routines.js templateChanges). Asked only where the workout differs from
-// the template, once the summary is saved, one routine at a time in a dialog of its own; nothing
-// is written unless "Update routine" is tapped.
-function templateSentence(changes) {
-  const c = templateChangeCounts(changes)
-  const parts = [
-    c.added ? tn('{0} exercise added', '{0} exercises added', c.added) : null,
-    c.removed ? tn('{0} exercise not done', '{0} exercises not done', c.removed) : null,
-    c.setsAdded ? tn('{0} set added', '{0} sets added', c.setsAdded) : null,
-    c.setsRemoved ? tn('{0} set removed', '{0} sets removed', c.setsRemoved) : null,
-    c.reordered ? t('order changed') : null,
-    c.supersets ? t('supersets changed') : null,
-  ].filter(Boolean)
-  return t('Compared with the routine: {0}.', parts.join(', '))
-}
-function TemplateAsk({ tp, close, onDone }) {
-  const answer = keep => {
-    if (!keep) {
-      let ok = false
-      update(s => { ok = applyTemplate(s.routines.find(r => r.id === tp.routineId), tp.changes.ex) })
-      if (ok) ui().toast(t('Routine updated'))
-    }
-    close()
-    onDone()
-  }
-  return <div className="tpl-ask" data-template-choice data-routine={tp.routineId}>
-    <div className="tpl-ask-ico"><Icon name="clipboard" /></div>
-    <h3>{t('Update “{0}”', tp.name)}</h3>
-    <p className="muted small">{templateSentence(tp.changes)}</p>
-    <Button variant="primary" onClick={() => answer(false)}>{t('Update routine')}</Button>
-    <div style={{ height: 8 }} />
-    <Button onClick={() => answer(true)}>{t('Keep original routine')}</Button>
-  </div>
-}
-function askTemplates(templates, done) {
-  const [tp, ...rest] = templates || []
-  if (!tp) { done(); return }
-  ui().openSheet(close => <TemplateAsk tp={tp} close={close} onDone={() => askTemplates(rest, done)} />, { kind: 'center', locked: true })
-}
-
 // Where the workout was done: the places used before and the gym cards' labels, or a new name.
 function PlacePicker({ value, onPick, close }) {
   const inputRef = useRef(null)
@@ -3606,8 +3593,21 @@ function PlacePicker({ value, onPick, close }) {
 // duration, the volume and the sets, the photos and the gym; the exercises are not listed again.
 // Save writes the note and the gym onto the workout (already saved when this opens), then asks
 // about each routine's template, then goes home.
-function FinishSummary({ w, prs, templates = [], close }) {
+// The finish is two pages: the plan of the next session (components/FinishPlan.jsx), skipped when
+// there is nothing to plan, then the summary. Both live in the one sheet.
+function FinishFlow({ w, prs, templates, past = false, close }) {
   const st = useStore(s => s.S)
+  const rec = (st.workouts || []).find(x => sameWorkout(x, w)) || w
+  const [plan] = useState(() => planOf(st, rec, templates))
+  // A workout logged into the past plans nothing: its next session is not this one's to decide.
+  const [page, setPage] = useState(plan.any && !past ? 'plan' : 'summary')
+  if (page === 'plan') return <FinishPlan w={rec} templates={templates} plan={plan} onDone={() => setPage('summary')} />
+  return <FinishSummary w={w} prs={prs} close={close} />
+}
+function FinishSummary({ w, prs, close }) {
+  const st = useStore(s => s.S)
+  // The record as the store holds it now: a corrected duration shows here at once.
+  const rec = (st.workouts || []).find(x => sameWorkout(x, w)) || w
   const noteRef = useRef(null)
   const onNoteFocus = useSheetKeyboard(noteRef)
   const [note, setNote] = useState(w.note || '')
@@ -3624,7 +3624,7 @@ function FinishSummary({ w, prs, templates = [], close }) {
       stampWorkout(rec)
     })
     close()
-    askTemplates(templates, () => nav('/home'))
+    nav('/home')
   }
   return <div className="fin2">
     <div className="fin2-head">
@@ -3633,7 +3633,12 @@ function FinishSummary({ w, prs, templates = [], close }) {
     <textarea ref={noteRef} className="fin2-note" rows={2} maxLength={NOTE_MAX} value={note}
       placeholder={t('How did your workout go?')} onFocus={onNoteFocus} onChange={e => setNote(e.target.value)} />
     <div className="fin2-stats">
-      <div><div className="l">{t('Duration')}</div><div className="v accent">{fmtDur(w.end - w.start)}</div></div>
+      {/* The same editor as the workout detail's: for a session nobody ended on time. */}
+      <button type="button" aria-label={t('Change duration')} onClick={() => workoutDurationSheet(rec)}
+        style={{ border: 0, background: 'none', padding: 0, font: 'inherit', color: 'inherit', textAlign: 'inherit', cursor: 'pointer' }}>
+        <div className="l">{t('Duration')} <Icon name="pencil" style={{ fontSize: 11, verticalAlign: '-1px' }} /></div>
+        <div className="v accent">{fmtDur(rec.end - rec.start)}</div>
+      </button>
       <div><div className="l">{t('Volume')}</div><div className="v">{fmtVol(sessionVolume(w, st), st.unit)}</div></div>
       <div><div className="l">{t('Sets')}</div><div className="v">{workSetsDone(w)}</div></div>
     </div>
@@ -3739,5 +3744,5 @@ function doFinishWorkout() {
   // into s.active, which is gone. What it held is not logged, like any set left unchecked.
   useUI.getState().stopWork()
   beep(snd(), 880, 0.15); beep(snd(), 1100, 0.15, 0.18); beep(snd(), 1320, 0.3, 0.36)
-  ui().openSheet(close => <FinishSummary w={shown} prs={prs} templates={templates} close={close} />, { kind: 'center', locked: true, wide: true })
+  ui().openSheet(close => <FinishFlow w={shown} prs={prs} templates={templates} past={past} close={close} />, { kind: 'center', locked: true, wide: true })
 }

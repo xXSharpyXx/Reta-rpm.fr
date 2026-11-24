@@ -41,7 +41,7 @@ afterEach(() => {
 
 describe('a set ticked on the watch', () => {
   it('takes the watch\'s numbers, is ticked by the screen\'s own tick, and starts the rest', () => {
-    const ev = { id: 'e1', type: 'setDone', wid: 'w-watch', exId: '0025', entryIdx: 0, setIdx: 0, w: 62.5, r: 7, at: 1 }
+    const ev = { id: 'e1', type: 'setDone', wid: 'w-watch', exId: '0025', entryIdx: 0, setIdx: 0, w: 62.5, r: 7, at: Date.now() }
     act(() => { applyEvents([ev, ev], () => useStore.getState()) })
     const set = useStore.getState().S.active.entries[0].sets[0]
     expect(set).toMatchObject({ w: 62.5, r: 7, done: true })
@@ -50,6 +50,24 @@ describe('a set ticked on the watch', () => {
     expect(useStore.getState().S.active.entries[0].sets[1].done).toBe(false)
     act(() => { applyEvents([ev], () => useStore.getState()) })
     expect(useStore.getState().S.active.entries[0].sets[0].done).toBe(true)   // not toggled back off
+  })
+
+  it('a tick heard of late starts its rest where the wrist did, not afresh, so both count the same end', () => {
+    const at = Date.now() - 40_000     // tapped 40 s ago, the phone only opens now
+    act(() => { applyEvents([{ id: 'late1', type: 'setDone', wid: 'w-watch', exId: '0025', entryIdx: 0, setIdx: 0, w: 60, r: 8, at }], () => useStore.getState()) })
+    const tm = useUI.getState().timer
+    expect(tm).toBeTruthy()
+    expect(tm.endsAt).toBeGreaterThanOrEqual(at + 90_000 - 1000)
+    expect(tm.endsAt).toBeLessThanOrEqual(at + 90_000 + 1000)
+    expect(tm.left).toBeGreaterThanOrEqual(49)
+    expect(tm.left).toBeLessThanOrEqual(51)
+  })
+
+  it('a tick heard of after its rest would have ended leaves no rest running', () => {
+    const at = Date.now() - 5 * 60_000
+    act(() => { applyEvents([{ id: 'late2', type: 'setDone', wid: 'w-watch', exId: '0025', entryIdx: 0, setIdx: 0, w: 60, r: 8, at }], () => useStore.getState()) })
+    expect(useStore.getState().S.active.entries[0].sets[0].done).toBe(true)
+    expect(useUI.getState().timer).toBeNull()
   })
 
   it('a row already ticked on the phone only takes the numbers', () => {

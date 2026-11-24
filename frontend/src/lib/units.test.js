@@ -27,7 +27,7 @@ describe('convertStateUnit', () => {
     unit: 'kg', targetW: 80, bodyweight: [{ d: '2026-01-01', w: 82.4, t: 1 }],
     exWeights: { '0025': { w: 80, d: '2026-01-01' }, legacy: 100 }, barWeights: { '0025': 15 },
     routines: [{ id: 'r', ex: [{ id: '0025', sets: 3, reps: 5, weight: 80, inc: 2.5, warmup: [{ weight: 40, reps: 8 }] }, { id: 'plank', mode: 'time', sec: 30, inc: 5 }] }],
-    workouts: [{ id: 'w', entries: [{ id: '0025', topW: 80, target: { weight: 80 }, planned: { sets: 3, reps: 5, weight: 80 }, sets: [{ w: 80, r: 5, done: true, drops: [{ w: 60, r: 5 }] }] }] }],
+    workouts: [{ id: 'w', entries: [{ id: '0025', topW: 80, target: { weight: 80 }, planned: { sets: 3, reps: 5, weight: 80 }, next: { w: 82.5, r: 5 }, sets: [{ w: 80, r: 5, done: true, drops: [{ w: 60, r: 5 }] }] }] }],
     active: { id: 'a', entries: [{ id: '0025', sets: [{ w: 82.5, r: 5, done: false }] }] },
     workoutView: 'list',
   }
@@ -43,6 +43,8 @@ describe('convertStateUnit', () => {
     expect(out.routines[0].ex[1]).toEqual({ id: 'plank', mode: 'time', sec: 30, inc: 5 })   // seconds stay seconds
     expect(out.workouts[0].entries[0]).toMatchObject({ topW: 176.5, target: { weight: 176.5 }, planned: { sets: 3, reps: 5, weight: 176.5 } })
     expect(out.workouts[0].entries[0].sets[0]).toMatchObject({ w: 176.5, done: true, drops: [{ w: 132.5, r: 5 }] })
+    // what the lifter chose at the end of the session for the next one is a weight too (lib/next-choice.js)
+    expect(out.workouts[0].entries[0].next).toEqual({ w: 182, r: 5 })
     expect(out.active.entries[0].sets[0].w).toBe(182)
     expect(out.workoutView).toBe('list')
     expect(S.unit).toBe('kg')                       // the input is not mutated

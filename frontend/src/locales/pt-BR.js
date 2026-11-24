@@ -1688,6 +1688,21 @@ export const PT_BR_OVERRIDES = {
   'Neon': 'Neon',
   'Pick your look': 'Escolha seu visual',
   'You can change it any time in Settings.': 'Você pode mudar quando quiser nas Configurações.',
+  'Apply': 'Aplicar',
+  'Next session set': 'Próximo treino definido',
+  'Your choice at the end of the last session.': 'Sua escolha no fim do último treino.',
+  'Check what changes next time. Nothing is saved until you apply.': 'Veja o que muda da próxima vez. Nada é salvo até você aplicar.',
+  'Keep in routine': 'Manter na rotina',
+  'Next session': 'Próximo treino',
+  'Not done today': 'Não feito hoje',
+  'Refuse': 'Recusar',
+  'Use today’s order and sets': 'Usar a ordem e as séries de hoje',
+  'Validate': 'Validar',
+  'Was {0}': 'Era {0}',
+  'My week': 'Minha semana',
+  'Pick the days this routine is planned on.': 'Escolha os dias em que esta rotina está prevista.',
+  'Plan on days': 'Planejar em dias',
+  'Start another routine': 'Começar outra rotina',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }

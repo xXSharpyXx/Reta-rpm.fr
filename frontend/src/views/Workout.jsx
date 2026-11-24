@@ -52,6 +52,7 @@ import { bindLiveActions } from '../lib/live-activity.js'
 import { isWarmupRow, isFailureSet, isDropSet, isRestPauseSet, dropsOf, clustersOf, addDrop, addCluster, removeDropAt, removeClusterAt, setDropAt, setClusterAt, nextDropWeight, nextBurstReps, isSideSet, makeSideSet, setSideField, toggleSide, addSideDrop, removeSideDropAt, setSideDropAt, addSideCluster, removeSideClusterAt, setSideClusterAt, WEIGHT_ORIGIN_MANUAL } from '../lib/workout-model.js'
 import { canMoveActiveWorkoutUnit, moveActiveWorkoutUnit, canMoveActiveWorkoutEntry, moveActiveWorkoutEntry } from '../lib/active-workout-order.js'
 import { nextOpenSet, workoutKeyAction } from '../lib/workout-keys.js'
+import { restCatchUp } from '../lib/rest-catchup.js'
 import FocusView from './FocusView.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 import { entryDbLoad, bellsIn, ownedWeightsFor, stepOwned } from '../lib/dumbbells.js'
@@ -1961,7 +1962,13 @@ function ActiveWorkout() {
         if (sec != null) set.sec = sec   // a hold: the seconds it lasted on the watch
         if (eff) { delete set.rpe; delete set.rir; set[eff[0]] = eff[1] }
       })
+      const restBefore = useUI.getState().timer
       if (!wasDone) toggleRef.current(idx, i, oneSide || undefined)
+      // The rest this tick started began at the tap on the wrist, maybe long before the phone heard
+      // of it (it was asleep): shortened by that much, so both devices count the same rest to its
+      // end instead of the phone starting it afresh and the watch following it back to the start.
+      const late = restCatchUp(restBefore, useUI.getState().timer, at)
+      if (late) useUI.getState().addRest(-late)
       if (at || hr) mutEntry(idx, en => { const set = en.sets[i]; if (!(oneSide ? set?.sides?.[oneSide]?.done : set?.done)) return; if (at) set.at = at; if (hr) set.hr = hr })
     },
     finish: () => { if (!useStore.getState().S.active?.editingWorkoutId) finishWorkoutNow() },
@@ -1984,9 +1991,8 @@ function ActiveWorkout() {
       mutEntry(idx, en => { const set = en.sets[i]; if (set?.done) set.at = at })
       // The rest this tick started began at the tap, which the Lock Screen has been counting
       // down since: heard of late, it is shortened by that much, or over already.
-      const rest = useUI.getState().timer
-      const late = Math.floor((Date.now() - at) / 1000)
-      if (late > 1 && rest && rest !== restBefore && !rest.ready && !rest.paused) useUI.getState().addRest(-late)
+      const late = restCatchUp(restBefore, useUI.getState().timer, at)
+      if (late) useUI.getState().addRest(-late)
     },
     // Next exercise and Skip rest: what this screen's own Next and the rest bar's Skip do.
     next: idx => update(s => { if (s.active && !s.active.editingWorkoutId && s.active.entries?.[idx]) s.active.cur = idx }),
@@ -2047,7 +2053,7 @@ function ActiveWorkout() {
   // spare on a phone (a second line under the name). With the chips off it sits in the header.
   const sessionMap = wc.muscleMap ? <SessionMapButton entries={A.entries} body={S.body} /> : null
   const chipRow = wc.exerciseChips && A.entries.length > 0
-    ? <div className="wchips-row"><WorkoutChips entries={A.entries} cur={listMode ? visibleExercise : cur} onPick={pickChip} />{sessionMap}</div>
+    ? <div className="wchips-row"><WorkoutChips entries={A.entries} cur={listMode ? visibleExercise : cur} onPick={pickChip} onAdd={addExercise} />{sessionMap}</div>
     : null
 
   // Hardware keys (issue #133, lib/workout-keys.js): Space or Enter ticks the next set, ← and →

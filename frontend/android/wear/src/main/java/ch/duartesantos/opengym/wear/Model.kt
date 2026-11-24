@@ -37,6 +37,8 @@ data class Snapshot(
     val restSec: Int,
     /** A rest running on the phone: when it ends, by the phone's clock. */
     val restEndsAt: Long?,
+    /** That rest's whole length (ms), so the ring starts where the phone's did. Older phones send none. */
+    val restTotalMs: Long? = null,
     val entries: List<WEntry>,
     /** The phone's clock when it sent this. */
     val phoneNow: Long?,
@@ -87,12 +89,14 @@ object Model {
             }
         }
         val rest = a?.optJSONObject("rest")?.numOrNull("endsAt")?.roundToLong()
+        val restTotal = a?.optJSONObject("rest")?.numOrNull("total")?.let { (it * 1000).roundToLong() }?.takeIf { it > 0 }
         return Snapshot(
             wid = if (a != null && a.has("entries")) a.optString("id").takeIf { it.isNotEmpty() } else null,
             unit = unit,
             cur = a?.optInt("cur", 0) ?: 0,
             restSec = (a?.numOrNull("restSec") ?: o.numOrNull("restSec") ?: 0.0).toInt().coerceAtLeast(0),
             restEndsAt = rest,
+            restTotalMs = restTotal,
             entries = entries,
             phoneNow = o.numOrNull("now")?.roundToLong(),
             accent = colorOf(theme?.optString("accent")),
@@ -226,7 +230,10 @@ object Model {
         val left = mine - watchNow
         if (left <= 0) return null
         // The ring's full length: the one already shown when this is the same rest moved a bit.
-        val total = if (prev != null && abs(prev.endsAt - mine) < 10 * 60_000) maxOf(prev.totalMs, left) else left
+        // A rest the watch has not seen yet: the phone's own length, not what is left of it now (the
+        // watch woke up halfway through it, and the ring must not start again from full).
+        val total = if (prev != null && abs(prev.endsAt - mine) < 10 * 60_000) maxOf(prev.totalMs, left)
+        else maxOf(s.restTotalMs ?: left, left)
         return Rest(mine, total)
     }
 }

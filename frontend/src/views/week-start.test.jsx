@@ -92,6 +92,8 @@ describe('Settings — week starts on', () => {
 })
 
 describe('Plan — the week schedule follows the setting', () => {
+  // A routine to plan: with none, the page opens on the sessions, where the first one is made.
+  beforeEach(() => { mocks.S.routines = [{ id: 'r0', name: 'Any', emoji: null, ex: [] }] })
   const mount = () => act(() => root.render(<Plan />))
   const planDays = () => [...host.querySelectorAll('.plan-day')].map(e => e.getAttribute('aria-label'))
 
