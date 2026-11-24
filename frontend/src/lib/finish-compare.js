@@ -26,7 +26,7 @@ export function trendOf(today, last) {
 }
 
 /** Rows for the summary of `w`, read from `st` (which already holds `w`). Cardio and timed sets are left out. */
-export function finishCompare(st, w) {
+export function finishCompare(st, w, { extra = {} } = {}) {
   const workouts = (st?.workouts || []).filter(x => x && x !== w && x.id !== w?.id && workoutAt(x) < workoutAt(w))
   // "Next" is the policy's proposal, so it is worked out as if this workout had no choice saved:
   // otherwise choosing would change the very proposal the choice is about (lib/next-choice.js).
@@ -50,8 +50,11 @@ export function finishCompare(st, w) {
     let editable = false
     let step = null
     const routine = entry.rid ? (st.routines || []).find(r => r.id === entry.rid) : null
-    const cfg = routine && !routine.excludeFromProgression && !entry.noProg && !w.noProg
+    const own = routine && !routine.excludeFromProgression && !entry.noProg && !w.noProg
       ? (routine.ex || []).find(c => c?.id === entry.id) : null
+    // An exercise added during the session is not in the routine yet: `extra[id]` is the setup it
+    // would join with, so the recap can still say what it would open at.
+    const cfg = own || (routine && !routine.excludeFromProgression && !entry.noProg && !w.noProg ? extra[entry.id] || null : null)
     if (cfg) {
       try {
         const built = buildPlannedEntry(proposalSt, cfg, routine)
@@ -69,7 +72,10 @@ export function finishCompare(st, w) {
     }
     rows.push({
       id: entry.id, rid: entry.rid || null, today, last, trend: trendOf(today, last), next,
-      editable, step,
+      editable, step, isNew: !own && !!cfg,
+      // Every set that was done, in order, with what kind of set it was (the bubble on its row).
+      sets: (Array.isArray(entry.sets) ? entry.sets : []).filter(s => s && s.done && Number(s.r) > 0)
+        .map(s => ({ w: Number(s.w) || 0, r: Math.round(Number(s.r)), kind: isWarmupRow(s) ? 'warm' : isFailureSet(s) ? 'fail' : 'work' })),
       // What the session itself was aimed at: the old value the proposal is struck against.
       was: { w: top(today), r: Number(entry.target?.reps) || null },
       chosen: nextChoiceOf(entry),

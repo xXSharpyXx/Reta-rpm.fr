@@ -66,3 +66,22 @@ describe('what the summary row says about the choice at the end of the session',
   })
 })
 
+describe('the rows the finish recap draws', () => {
+  it('lists every done set with its kind, warm-ups and failures included', () => {
+    const now = workout('w2', '2026-10-03', [set(20, 8, { phase: 'warmup' }), set(60, 5), set(60, 3, { f: true })])
+    const [row] = finishCompare({ unit: 'kg', routines: [routine], workouts: [now] }, now)
+    expect(row.sets.map(x => x.kind)).toEqual(['warm', 'work', row.sets[2].kind])
+    expect(row.sets[0]).toEqual({ w: 20, r: 8, kind: 'warm' })
+  })
+  it('proposes numbers for an exercise added today when its setup is given', () => {
+    const added = { id: 'dips', sets: 3, reps: 8, weight: 20, mode: 'reps' }
+    const now = workout('w2', '2026-10-03', [set(60, 5)])
+    now.entries.push({ id: 'dips', rid: 'r1', target: { ...added }, sets: [set(20, 8), set(20, 8), set(20, 8)] })
+    const st = { unit: 'kg', routines: [routine], workouts: [now] }
+    expect(finishCompare(st, now).find(r => r.id === 'dips').next).toBeNull()
+    const row = finishCompare(st, now, { extra: { dips: added } }).find(r => r.id === 'dips')
+    expect(row.isNew).toBe(true)
+    expect(row.next).toMatchObject({ w: 22.5, kind: 'up' })
+  })
+})
+
