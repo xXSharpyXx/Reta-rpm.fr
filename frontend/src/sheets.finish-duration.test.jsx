@@ -46,6 +46,7 @@ describe('finish summary: the duration can be corrected', () => {
     act(() => finishWorkoutNow())
     const summary = renderTopSheet()
     await settle()
+    act(() => button('Skip', summary).click())                // the plan page comes first
     const before = S().workouts.at(-1)
     const tile = [...summary.querySelectorAll('button')].find(b => b.textContent.includes('Duration'))
     expect(tile.textContent).toContain('20 min')

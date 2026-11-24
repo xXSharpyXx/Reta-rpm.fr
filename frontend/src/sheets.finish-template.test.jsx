@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
-// The finish asks whether the workout just done becomes its routine's template (owner,
-// 2026-11-17). One tap keeps it; the other button, or closing the summary, leaves the routine.
+// The workout just done and its routine (owner, 2026-11-17, reworked 2026-11-24): the first page
+// after Finish plans the next session, and what the session changed (an exercise left out, one
+// added, the order and set counts) is decided there, with switches, instead of in a dialog after
+// Save. Nothing changes unless a switch says so.
 import React, { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createRoot } from 'react-dom/client'
@@ -24,10 +26,11 @@ function renderTopSheet() {
 // The photo section asks the media store whether it can keep files; let that answer land.
 const settle = () => act(async () => {})
 const button = text => [...host.querySelectorAll('button')].find(b => b.textContent.trim() === text)
+const toggle = label => host.querySelector(`[role="switch"][aria-label="${label}"]`)
 
-function install(entries) {
+function install(entries, routineEx = [{ id: '0025', sets: 1, reps: 5, weight: 60 }]) {
   const st = clone(DEF)
-  st.routines = [{ id: 'r1', name: 'Push A', ex: [{ id: '0025', sets: 1, reps: 5, weight: 60 }] }]
+  st.routines = [{ id: 'r1', name: 'Push A', ex: routineEx }]
   st.active = {
     id: 'fin', d: '2026-09-28', start: Date.now() - 20 * 60000, routineIds: ['r1'], routineId: 'r1', name: 'Push A', bw: null, cur: 0,
     entries,
@@ -47,61 +50,46 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-// Save on the summary, then one dialog per routine whose template the workout differs from.
-async function finishAndSave() {
+async function finish() {
   act(() => finishWorkoutNow())
   renderTopSheet()
   await settle()
-  act(() => button('Save').click())
-  renderTopSheet()
 }
 
-describe("finish summary: the workout as the routine's template", () => {
-  it('asks once Save is tapped, and Update routine makes it the template', async () => {
+describe("finish: what the session changed in the routine", () => {
+  it('offers an exercise added today, and the switch puts it in the routine with the setup it was done with', async () => {
     install([clone(bench), clone(raise)])
-    await finishAndSave()
-    const box = host.querySelector('[data-template-choice]')
-    expect(box).toBeTruthy()
-    expect(box.textContent).toContain('Update “Push A”')
-    expect(box.textContent).toContain('Compared with the routine: 1 exercise added.')
+    await finish()
+    expect(host.querySelector('[data-plan-card="0334"]').textContent).toContain('New')
     // Nothing changed yet: the offer is only an offer.
     expect(S().routines[0].ex.map(x => x.id)).toEqual(['0025'])
-    act(() => button('Update routine').click())
+    act(() => toggle('Add to routine').click())
+    act(() => button('Apply').click())
     expect(S().routines[0].ex.map(x => [x.id, x.sets])).toEqual([['0025', 1], ['0334', 2]])
     // The bench keeps its own slot: the routine's weight, not today's.
     expect(S().routines[0].ex[0]).toMatchObject({ reps: 5, weight: 60 })
     expect(S().routines[0].ex[1].rid).toBeUndefined()
-    expect(useUI.getState().sheets).toHaveLength(0)
   })
 
-  it('keeps the template as it was on the other button', async () => {
+  it('leaves the routine as it was when nothing is switched', async () => {
     install([clone(bench), clone(raise)])
-    await finishAndSave()
-    act(() => button('Keep original routine').click())
+    await finish()
+    act(() => button('Apply').click())
     expect(S().routines[0].ex.map(x => x.id)).toEqual(['0025'])
-    expect(useUI.getState().sheets).toHaveLength(0)
   })
 
-  it('says nothing when the workout was the template', async () => {
-    install([clone(bench)])
-    act(() => finishWorkoutNow())
-    renderTopSheet()
-    await settle()
-    act(() => button('Save').click())
-    expect(useUI.getState().sheets).toHaveLength(0)
-  })
-
-  it('counts the sets done: one more set is a change to offer', async () => {
+  it('counts the sets done: one more set is offered with today\'s order and sets', async () => {
     install([{ ...clone(bench), sets: [{ w: 60, r: 5, done: true }, { w: 60, r: 5, done: true }] }])
-    await finishAndSave()
-    expect(host.querySelector('[data-template-choice]').textContent).toContain('1 set added')
+    await finish()
+    act(() => toggle('Use today’s order and sets').click())
+    act(() => button('Apply').click())
+    expect(S().routines[0].ex[0].sets).toBe(2)
   })
 
-  it('keeps the note and the gym typed on the summary', async () => {
+  it('keeps the note and the gym typed on the summary, the next page', async () => {
     install([clone(bench)])
-    act(() => finishWorkoutNow())
-    renderTopSheet()
-    await settle()
+    await finish()
+    act(() => button('Skip').click())
     const note = host.querySelector('textarea')
     act(() => {
       Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(note, 'felt strong')
@@ -112,5 +100,6 @@ describe("finish summary: the workout as the routine's template", () => {
     expect(host.textContent).toContain('Gym')
     act(() => button('Save').click())
     expect(S().workouts.at(-1).note).toBe('felt strong')
+    expect(useUI.getState().sheets).toHaveLength(0)
   })
 })

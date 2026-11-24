@@ -27,7 +27,7 @@ import ExerciseAliasesEditor, { ExerciseAliasesField, ExerciseAliasesLink } from
 import { SG_NAME_MAX } from './lib/superset-meta.js'
 import { REST_MAX, fmtRest, restWheelValue } from './lib/duration.js'
 import Icon from './components/Icon.jsx'
-import { NextTimeLine, ValidateAll } from './components/FinishNextTime.jsx'
+import FinishPlan, { planOf } from './components/FinishPlan.jsx'
 import { SeasonDeco } from './components/Seasonal.jsx'
 import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, NumberField, MultiSelectRow } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
@@ -57,7 +57,7 @@ import { clampIncline, inclineFits, INCLINE_MAX, INCLINE_STEP } from './lib/incl
 import { buildCompletedWorkout, sessionEnd } from './lib/finish-workout.js'
 import { isWarmupRow, hasCompletedWork } from './lib/workout-model.js'
 import { ownExerciseRest } from './lib/supersetFlow.js'
-import { saveSessionAsRoutine, templateChanges, applyTemplate, templateChangeCounts } from './lib/session-routines.js'
+import { saveSessionAsRoutine, templateChanges } from './lib/session-routines.js'
 import { cleanPlace, placeOf, placesOf, PLACE_MAX } from './lib/workout-place.js'
 import { repeatSessionEntries } from './lib/session-repeat.js'
 import { swapActiveExercise } from './lib/active-exercise-swap.js'
@@ -66,7 +66,6 @@ import { useAutoMore } from './lib/use-auto-more.js'
 import { isFav, toggleFav, sortFavouritesFirst, sortYoursFirst } from './lib/favourites.js'
 import { buildSessionEntries, buildPlannedEntry, buildSessionEntry, plannedConfigOf } from './lib/session-start.js'
 import { isSimple } from './lib/simple.js'
-import { finishCompare, finishCardio } from './lib/finish-compare.js'
 import { workoutFit, fitFileName } from './lib/fit-export.js'
 import { joinSessionNoProg } from './lib/session-noprog.js'
 import { buildCombinedEntries, deriveSessionName } from './lib/session-merge.js'
@@ -3539,78 +3538,6 @@ export function setsLine(sets, unit) {
   }
   return sets.map(s => (s.w > 0 ? fmtNum(s.w) + '×' : '') + reps(s)).join(' · ')
 }
-// The finish asks, per routine of the workout, whether what was just done becomes that routine's
-// template (owner, 2026-11-17): the exercises done, in their order, with their set counts and
-// supersets (lib/session-routines.js templateChanges). Asked only where the workout differs from
-// the template, once the summary is saved, one routine at a time in a dialog of its own; nothing
-// is written unless "Update routine" is tapped.
-function templateSentence(changes) {
-  const c = templateChangeCounts(changes)
-  const parts = [
-    c.added ? tn('{0} exercise added', '{0} exercises added', c.added) : null,
-    c.removed ? tn('{0} exercise not done', '{0} exercises not done', c.removed) : null,
-    c.setsAdded ? tn('{0} set added', '{0} sets added', c.setsAdded) : null,
-    c.setsRemoved ? tn('{0} set removed', '{0} sets removed', c.setsRemoved) : null,
-    c.reordered ? t('order changed') : null,
-    c.supersets ? t('supersets changed') : null,
-  ].filter(Boolean)
-  return t('Compared with the routine: {0}.', parts.join(', '))
-}
-
-const TREND = { 1: ['arrowUp', 'var(--green)'], 0: ['minus', 'var(--text-2)'], [-1]: ['arrowDown', 'var(--orange)'] }
-function LastAndNext({ st, w }) {
-  // The record as the store holds it now, so a choice made in this list shows at once (and a
-  // summary opened again shows what was saved, not the proposal).
-  const rec = (st.workouts || []).find(x => sameWorkout(x, w)) || w
-  const rows = finishCompare(st, rec)
-  if (!rows.length) return null
-  const nextWord = { up: t('step up'), hold: t('same again'), down: t('lighter'), deload: t('deload') }
-  return <div style={{ textAlign: 'start', marginBottom: 14 }}>
-    <h4 className="sec">{t('Last time and next time')}</h4>
-    <div className="list">{rows.map(row => {
-      const ex = EXIDX[row.id]
-      const tr = row.trend == null ? null : TREND[row.trend]
-      return <div key={row.id} className="item" style={{ display: 'block' }}>
-        <div className="row between" style={{ gap: 8 }}>
-          <span className={'tt ' + exerciseNameClass(ex)} style={{ fontWeight: 600 }}>{ex ? exerciseNameFor(ex) : row.id}</span>
-          {tr ? <span style={{ color: tr[1], display: 'inline-flex' }} aria-label={row.trend > 0 ? t('Up on last time') : row.trend < 0 ? t('Down on last time') : t('Same as last time')}><Icon name={tr[0]} /></span>
-            : <span className="tag nocap">{t('First time')}</span>}
-        </div>
-        <div className="small">{t('Today')}: {setsLine(row.today, st.unit)}</div>
-        {row.last && <div className="small dim">{t('Last time')}: {setsLine(row.last, st.unit)}</div>}
-        {row.next && row.editable
-          ? <NextTimeLine row={row} rec={rec} unit={st.unit} name={ex ? exerciseNameFor(ex) : row.id} word={nextWord[row.next.kind]} />
-          : row.next && <div className="small accent">{t('Next time')}: {row.next.w != null ? fmtNum(row.next.w) + ' ' + st.unit : ''}{row.next.w != null && row.next.r != null ? ' × ' : ''}{row.next.r != null ? row.next.r : ''} · {nextWord[row.next.kind]}</div>}
-      </div>
-    })}</div>
-    <div style={{ marginTop: 10 }}><ValidateAll rows={rows} rec={rec} /></div>
-  </div>
-}
-function TemplateAsk({ tp, close, onDone }) {
-  const answer = keep => {
-    if (!keep) {
-      let ok = false
-      update(s => { ok = applyTemplate(s.routines.find(r => r.id === tp.routineId), tp.changes.ex) })
-      if (ok) ui().toast(t('Routine updated'))
-    }
-    close()
-    onDone()
-  }
-  return <div className="tpl-ask" data-template-choice data-routine={tp.routineId}>
-    <div className="tpl-ask-ico"><Icon name="clipboard" /></div>
-    <h3>{t('Update “{0}”', tp.name)}</h3>
-    <p className="muted small">{templateSentence(tp.changes)}</p>
-    <Button variant="primary" onClick={() => answer(false)}>{t('Update routine')}</Button>
-    <div style={{ height: 8 }} />
-    <Button onClick={() => answer(true)}>{t('Keep original routine')}</Button>
-  </div>
-}
-function askTemplates(templates, done) {
-  const [tp, ...rest] = templates || []
-  if (!tp) { done(); return }
-  ui().openSheet(close => <TemplateAsk tp={tp} close={close} onDone={() => askTemplates(rest, done)} />, { kind: 'center', locked: true })
-}
-
 // Where the workout was done: the places used before and the gym cards' labels, or a new name.
 function PlacePicker({ value, onPick, close }) {
   const inputRef = useRef(null)
@@ -3637,7 +3564,18 @@ function PlacePicker({ value, onPick, close }) {
 // duration, the volume and the sets, the photos and the gym; the exercises are not listed again.
 // Save writes the note and the gym onto the workout (already saved when this opens), then asks
 // about each routine's template, then goes home.
-function FinishSummary({ w, prs, templates = [], close }) {
+// The finish is two pages: the plan of the next session (components/FinishPlan.jsx), skipped when
+// there is nothing to plan, then the summary. Both live in the one sheet.
+function FinishFlow({ w, prs, templates, past = false, close }) {
+  const st = useStore(s => s.S)
+  const rec = (st.workouts || []).find(x => sameWorkout(x, w)) || w
+  const [plan] = useState(() => planOf(st, rec, templates))
+  // A workout logged into the past plans nothing: its next session is not this one's to decide.
+  const [page, setPage] = useState(plan.any && !past ? 'plan' : 'summary')
+  if (page === 'plan') return <FinishPlan w={rec} templates={templates} plan={plan} onDone={() => setPage('summary')} />
+  return <FinishSummary w={w} prs={prs} close={close} />
+}
+function FinishSummary({ w, prs, close }) {
   const st = useStore(s => s.S)
   // The record as the store holds it now: a corrected duration shows here at once.
   const rec = (st.workouts || []).find(x => sameWorkout(x, w)) || w
@@ -3657,7 +3595,7 @@ function FinishSummary({ w, prs, templates = [], close }) {
       stampWorkout(rec)
     })
     close()
-    askTemplates(templates, () => nav('/home'))
+    nav('/home')
   }
   return <div className="fin2">
     <div className="fin2-head">
@@ -3675,8 +3613,6 @@ function FinishSummary({ w, prs, templates = [], close }) {
       <div><div className="l">{t('Volume')}</div><div className="v">{fmtVol(sessionVolume(w, st), st.unit)}</div></div>
       <div><div className="l">{t('Sets')}</div><div className="v">{workSetsDone(w)}</div></div>
     </div>
-    {/* What each exercise opens at next time: the old value struck, validate, keep or edit it. */}
-    <LastAndNext st={st} w={rec} />
     {prs.length > 0 && <div className="small accent row fin2-pr"><Icon name="trophy" /><span>{tn('{0} new record', '{0} new records', prs.length)}</span></div>}
     {/* The moment for a progress photo or the clip of a set: the workout is already saved, so
         what is added here goes straight onto its record. */}
@@ -3779,5 +3715,5 @@ function doFinishWorkout() {
   // into s.active, which is gone. What it held is not logged, like any set left unchecked.
   useUI.getState().stopWork()
   beep(snd(), 880, 0.15); beep(snd(), 1100, 0.15, 0.18); beep(snd(), 1320, 0.3, 0.36)
-  ui().openSheet(close => <FinishSummary w={shown} prs={prs} templates={templates} close={close} />, { kind: 'center', locked: true, wide: true })
+  ui().openSheet(close => <FinishFlow w={shown} prs={prs} templates={templates} past={past} close={close} />, { kind: 'center', locked: true, wide: true })
 }

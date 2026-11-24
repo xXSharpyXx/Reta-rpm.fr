@@ -1689,12 +1689,16 @@ export const PT_BR_OVERRIDES = {
   'Pick your look': 'Escolha seu visual',
   'You can change it any time in Settings.': 'Você pode mudar quando quiser nas Configurações.',
   'Apply': 'Aplicar',
-  'Edit next time': 'Editar para a próxima vez',
-  'Keep {0}': 'Manter {0}',
   'Next session set': 'Próximo treino definido',
-  'Validate all': 'Validar tudo',
-  'Your choice': 'Sua escolha',
   'Your choice at the end of the last session.': 'Sua escolha no fim do último treino.',
+  'Check what changes next time. Nothing is saved until you apply.': 'Veja o que muda da próxima vez. Nada é salvo até você aplicar.',
+  'Keep in routine': 'Manter na rotina',
+  'Next session': 'Próximo treino',
+  'Not done today': 'Não feito hoje',
+  'Refuse': 'Recusar',
+  'Use today’s order and sets': 'Usar a ordem e as séries de hoje',
+  'Validate': 'Validar',
+  'Was {0}': 'Era {0}',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }
