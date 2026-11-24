@@ -104,6 +104,22 @@ class ModelTest {
         assertEquals(120_000L, r!!.totalMs)
     }
 
+    @Test fun aRestTheWatchWakesInTheMiddleOfKeepsThePhonesRingLength() {
+        // the phone started a 90 s rest 40 s ago: the ring is 90 s long and 50 s are left
+        val s = snap.copy(restEndsAt = 1_050_000L, restTotalMs = 90_000L, phoneNow = 1_000_000L)
+        val r = Model.restAfterSnapshot(s, 1_000_000L, null, null, false)!!
+        assertEquals(1_050_000L, r.endsAt)
+        assertEquals(90_000L, r.totalMs)
+        // a phone that sends no length: the ring is what is left, as before
+        assertEquals(50_000L, Model.restAfterSnapshot(s.copy(restTotalMs = null), 1_000_000L, null, null, false)!!.totalMs)
+    }
+
+    @Test fun parsesTheRestsLength() {
+        val s = Model.parse("""{"v":1,"unit":"kg","restSec":90,"now":5,"active":{"id":"w1","cur":0,"entries":[],"rest":{"endsAt":1050000,"total":90}}}""")!!
+        assertEquals(1_050_000L, s.restEndsAt)
+        assertEquals(90_000L, s.restTotalMs)
+    }
+
     @Test fun stepsTheWeightByTenths() {
         assertEquals(62.6, Model.stepWeight(62.5, 1), 1e-9)
         assertEquals(61.5, Model.stepWeight(62.5, -10), 1e-9)

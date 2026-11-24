@@ -185,7 +185,8 @@ export function buildSnapshot(S, { timer = null, ready = null } = {}) {
       cur: Math.max(0, Math.min(A.entries.length - 1, A.cur || 0)),
       restSec: num(S.restSec) || 0,
       // a rest running on the phone, so the watch counts down the same one
-      rest: timer && !timer.paused && !timer.ready && num(timer.endsAt) ? { endsAt: timer.endsAt } : null,
+      // and how long it is, so the watch's ring starts where the phone's did, not when the watch heard of it
+      rest: timer && !timer.paused && !timer.ready && num(timer.endsAt) ? { endsAt: timer.endsAt, ...(num(timer.total) > 0 ? { total: timer.total } : {}) } : null,
       entries: A.entries.filter(e => e && e.id != null).map(e => watchEntry(e, H, S)),
       // Apple Health's workout type on the watch: a run is a run (#799)
       ...(healthType ? { healthType } : {}),
