@@ -9,6 +9,7 @@ import { createRoot } from 'react-dom/client'
 import { useStore } from '../store/useStore.js'
 import { dayOverrideSheet, workoutDetailSheet } from '../sheets.jsx'
 import { todayISO, isoOf } from '../lib/format.js'
+import { shiftDay } from '../lib/day-swipe.js'
 import Home from './Home.jsx'
 
 const nav = vi.fn()
@@ -136,3 +137,35 @@ describe('Home — a session in progress', () => {
     expect(row.querySelector('.tag').textContent).toBe('Resume')
   })
 })
+
+describe('Home: swipe the day', () => {
+  const touch = (type, x, y) => Object.assign(new Event(type, { bubbles: true }), { touches: type === 'touchend' ? [] : [{ clientX: x, clientY: y }], changedTouches: [{ clientX: x, clientY: y }] })
+  const swipe = (el, dx, dy = 0) => {
+    act(() => { el.dispatchEvent(touch('touchstart', 200, 300)) })
+    act(() => { el.dispatchEvent(touch('touchend', 200 + dx, 300 + dy)) })
+  }
+  it('a swipe toward the left goes to the day before, toward the right to the day after', () => {
+    setS()
+    mount()
+    swipe(panel(), -90)
+    expect(panel().dataset.day).toBe(shiftDay(todayISO(), -1))
+    swipe(panel(), 90)
+    swipe(panel(), 90)
+    expect(panel().dataset.day).toBe(shiftDay(todayISO(), 1))
+  })
+  it('keeps the picked day on the strip, whichever week it falls in', () => {
+    setS()
+    mount()
+    for (let i = 0; i < 9; i++) swipe(panel(), -90)
+    expect(panel().dataset.day).toBe(shiftDay(todayISO(), -9))
+    expect(host.querySelectorAll('.wday.sel')).toHaveLength(1)
+  })
+  it('a short or mostly vertical swipe does nothing', () => {
+    setS()
+    mount()
+    swipe(panel(), -20)
+    swipe(panel(), -90, 120)
+    expect(panel().dataset.day).toBe(todayISO())
+  })
+})
+
