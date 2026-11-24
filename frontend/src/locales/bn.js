@@ -2827,4 +2827,11 @@ export default {
   'Pick your look': 'তোমার লুক বেছে নাও',
   'Sand': 'বালি',
   'You can change it any time in Settings.': 'সেটিংসে যেকোনো সময় বদলাতে পারো।',
+  'Apply': 'প্রয়োগ করুন',
+  'Edit next time': 'পরের বারের জন্য সম্পাদনা',
+  'Keep {0}': '{0} রাখুন',
+  'Next session set': 'পরের সেশন ঠিক করা হয়েছে',
+  'Validate all': 'সব নিশ্চিত করুন',
+  'Your choice': 'আপনার পছন্দ',
+  'Your choice at the end of the last session.': 'শেষ সেশনের শেষে আপনার পছন্দ।',
 }

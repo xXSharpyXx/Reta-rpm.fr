@@ -2748,4 +2748,11 @@ export default {
   'Pick your look': 'Wybierz swój wygląd',
   'Sand': 'Piasek',
   'You can change it any time in Settings.': 'Możesz to zmienić w Ustawieniach w każdej chwili.',
+  'Apply': 'Zastosuj',
+  'Edit next time': 'Zmień na następny raz',
+  'Keep {0}': 'Zostaw {0}',
+  'Next session set': 'Następny trening ustawiony',
+  'Validate all': 'Zatwierdź wszystko',
+  'Your choice': 'Twój wybór',
+  'Your choice at the end of the last session.': 'Twój wybór na koniec ostatniego treningu.',
 }

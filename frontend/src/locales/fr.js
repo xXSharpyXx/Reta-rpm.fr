@@ -2748,4 +2748,11 @@ export default {
   'Pick your look': 'Choisis ton look',
   'Sand': 'Sable',
   'You can change it any time in Settings.': 'Tu peux le changer quand tu veux dans les Réglages.',
+  'Apply': 'Appliquer',
+  'Edit next time': 'Modifier la prochaine fois',
+  'Keep {0}': 'Garder {0}',
+  'Next session set': 'Prochaine séance réglée',
+  'Validate all': 'Tout valider',
+  'Your choice': 'Ton choix',
+  'Your choice at the end of the last session.': 'Ton choix à la fin de la dernière séance.',
 }

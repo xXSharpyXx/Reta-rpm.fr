@@ -2752,4 +2752,11 @@ export default {
   'Pick your look': 'Выбери оформление',
   'Sand': 'Песок',
   'You can change it any time in Settings.': 'Его можно сменить в любой момент в Настройках.',
+  'Apply': 'Применить',
+  'Edit next time': 'Изменить на следующий раз',
+  'Keep {0}': 'Оставить {0}',
+  'Next session set': 'Следующая тренировка задана',
+  'Validate all': 'Подтвердить всё',
+  'Your choice': 'Ваш выбор',
+  'Your choice at the end of the last session.': 'Ваш выбор в конце прошлой тренировки.',
 }

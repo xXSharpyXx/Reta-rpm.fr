@@ -27,6 +27,7 @@ import ExerciseAliasesEditor, { ExerciseAliasesField, ExerciseAliasesLink } from
 import { SG_NAME_MAX } from './lib/superset-meta.js'
 import { REST_MAX, fmtRest, restWheelValue } from './lib/duration.js'
 import Icon from './components/Icon.jsx'
+import { NextTimeLine, ValidateAll } from './components/FinishNextTime.jsx'
 import { SeasonDeco } from './components/Seasonal.jsx'
 import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, NumberField, MultiSelectRow } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
@@ -3555,6 +3556,36 @@ function templateSentence(changes) {
   ].filter(Boolean)
   return t('Compared with the routine: {0}.', parts.join(', '))
 }
+
+const TREND = { 1: ['arrowUp', 'var(--green)'], 0: ['minus', 'var(--text-2)'], [-1]: ['arrowDown', 'var(--orange)'] }
+function LastAndNext({ st, w }) {
+  // The record as the store holds it now, so a choice made in this list shows at once (and a
+  // summary opened again shows what was saved, not the proposal).
+  const rec = (st.workouts || []).find(x => sameWorkout(x, w)) || w
+  const rows = finishCompare(st, rec)
+  if (!rows.length) return null
+  const nextWord = { up: t('step up'), hold: t('same again'), down: t('lighter'), deload: t('deload') }
+  return <div style={{ textAlign: 'start', marginBottom: 14 }}>
+    <h4 className="sec">{t('Last time and next time')}</h4>
+    <div className="list">{rows.map(row => {
+      const ex = EXIDX[row.id]
+      const tr = row.trend == null ? null : TREND[row.trend]
+      return <div key={row.id} className="item" style={{ display: 'block' }}>
+        <div className="row between" style={{ gap: 8 }}>
+          <span className={'tt ' + exerciseNameClass(ex)} style={{ fontWeight: 600 }}>{ex ? exerciseNameFor(ex) : row.id}</span>
+          {tr ? <span style={{ color: tr[1], display: 'inline-flex' }} aria-label={row.trend > 0 ? t('Up on last time') : row.trend < 0 ? t('Down on last time') : t('Same as last time')}><Icon name={tr[0]} /></span>
+            : <span className="tag nocap">{t('First time')}</span>}
+        </div>
+        <div className="small">{t('Today')}: {setsLine(row.today, st.unit)}</div>
+        {row.last && <div className="small dim">{t('Last time')}: {setsLine(row.last, st.unit)}</div>}
+        {row.next && row.editable
+          ? <NextTimeLine row={row} rec={rec} unit={st.unit} name={ex ? exerciseNameFor(ex) : row.id} word={nextWord[row.next.kind]} />
+          : row.next && <div className="small accent">{t('Next time')}: {row.next.w != null ? fmtNum(row.next.w) + ' ' + st.unit : ''}{row.next.w != null && row.next.r != null ? ' × ' : ''}{row.next.r != null ? row.next.r : ''} · {nextWord[row.next.kind]}</div>}
+      </div>
+    })}</div>
+    <div style={{ marginTop: 10 }}><ValidateAll rows={rows} rec={rec} /></div>
+  </div>
+}
 function TemplateAsk({ tp, close, onDone }) {
   const answer = keep => {
     if (!keep) {
@@ -3608,6 +3639,8 @@ function PlacePicker({ value, onPick, close }) {
 // about each routine's template, then goes home.
 function FinishSummary({ w, prs, templates = [], close }) {
   const st = useStore(s => s.S)
+  // The record as the store holds it now: a corrected duration shows here at once.
+  const rec = (st.workouts || []).find(x => sameWorkout(x, w)) || w
   const noteRef = useRef(null)
   const onNoteFocus = useSheetKeyboard(noteRef)
   const [note, setNote] = useState(w.note || '')
@@ -3633,10 +3666,17 @@ function FinishSummary({ w, prs, templates = [], close }) {
     <textarea ref={noteRef} className="fin2-note" rows={2} maxLength={NOTE_MAX} value={note}
       placeholder={t('How did your workout go?')} onFocus={onNoteFocus} onChange={e => setNote(e.target.value)} />
     <div className="fin2-stats">
-      <div><div className="l">{t('Duration')}</div><div className="v accent">{fmtDur(w.end - w.start)}</div></div>
+      {/* The same editor as the workout detail's: for a session nobody ended on time. */}
+      <button type="button" aria-label={t('Change duration')} onClick={() => workoutDurationSheet(rec)}
+        style={{ border: 0, background: 'none', padding: 0, font: 'inherit', color: 'inherit', textAlign: 'inherit', cursor: 'pointer' }}>
+        <div className="l">{t('Duration')} <Icon name="pencil" style={{ fontSize: 11, verticalAlign: '-1px' }} /></div>
+        <div className="v accent">{fmtDur(rec.end - rec.start)}</div>
+      </button>
       <div><div className="l">{t('Volume')}</div><div className="v">{fmtVol(sessionVolume(w, st), st.unit)}</div></div>
       <div><div className="l">{t('Sets')}</div><div className="v">{workSetsDone(w)}</div></div>
     </div>
+    {/* What each exercise opens at next time: the old value struck, validate, keep or edit it. */}
+    <LastAndNext st={st} w={rec} />
     {prs.length > 0 && <div className="small accent row fin2-pr"><Icon name="trophy" /><span>{tn('{0} new record', '{0} new records', prs.length)}</span></div>}
     {/* The moment for a progress photo or the clip of a set: the workout is already saved, so
         what is added here goes straight onto its record. */}

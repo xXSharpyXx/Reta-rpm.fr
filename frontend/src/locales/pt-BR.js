@@ -1690,4 +1690,12 @@ export const PT_BR_OVERRIDES = {
   'You can change it any time in Settings.': 'Você pode mudar quando quiser nas Configurações.',
 }
 
-export default { ...pt, ...PT_BR_OVERRIDES }
+export default { ...pt, ...PT_BR_OVERRIDES,
+  'Apply': 'Aplicar',
+  'Edit next time': 'Editar para a próxima vez',
+  'Keep {0}': 'Manter {0}',
+  'Next session set': 'Próximo treino definido',
+  'Validate all': 'Validar tudo',
+  'Your choice': 'Sua escolha',
+  'Your choice at the end of the last session.': 'Sua escolha no fim do último treino.',
+}

@@ -2748,4 +2748,11 @@ export default {
   'Pick your look': '스타일을 골라 주세요',
   'Sand': '모래',
   'You can change it any time in Settings.': '설정에서 언제든 바꿀 수 있어요.',
+  'Apply': '적용',
+  'Edit next time': '다음 번 수정',
+  'Keep {0}': '{0} 유지',
+  'Next session set': '다음 운동이 설정되었어요',
+  'Validate all': '모두 확정',
+  'Your choice': '내 선택',
+  'Your choice at the end of the last session.': '지난 운동이 끝날 때 한 선택입니다.',
 }

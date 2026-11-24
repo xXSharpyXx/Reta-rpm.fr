@@ -2745,4 +2745,11 @@ export default {
   'Pick your look': 'Обери оформлення',
   'Sand': 'Пісок',
   'You can change it any time in Settings.': 'Його можна змінити будь-коли в Налаштуваннях.',
+  'Apply': 'Застосувати',
+  'Edit next time': 'Змінити на наступний раз',
+  'Keep {0}': 'Залишити {0}',
+  'Next session set': 'Наступне тренування задано',
+  'Validate all': 'Підтвердити все',
+  'Your choice': 'Ваш вибір',
+  'Your choice at the end of the last session.': 'Ваш вибір наприкінці останнього тренування.',
 }

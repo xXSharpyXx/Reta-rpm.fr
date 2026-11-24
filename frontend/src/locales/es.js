@@ -2748,4 +2748,11 @@ export default {
   'Pick your look': 'Elige tu estilo',
   'Sand': 'Arena',
   'You can change it any time in Settings.': 'Puedes cambiarlo cuando quieras en Ajustes.',
+  'Apply': 'Aplicar',
+  'Edit next time': 'Editar la próxima vez',
+  'Keep {0}': 'Mantener {0}',
+  'Next session set': 'Próxima sesión fijada',
+  'Validate all': 'Validar todo',
+  'Your choice': 'Tu elección',
+  'Your choice at the end of the last session.': 'Tu elección al final de la última sesión.',
 }

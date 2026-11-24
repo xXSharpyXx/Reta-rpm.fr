@@ -2795,4 +2795,11 @@ export default {
   'Pick your look': 'Välj ditt utseende',
   'Sand': 'Sand',
   'You can change it any time in Settings.': 'Du kan ändra det när som helst i Inställningar.',
+  'Apply': 'Använd',
+  'Edit next time': 'Ändra till nästa gång',
+  'Keep {0}': 'Behåll {0}',
+  'Next session set': 'Nästa pass är inställt',
+  'Validate all': 'Godkänn alla',
+  'Your choice': 'Ditt val',
+  'Your choice at the end of the last session.': 'Ditt val i slutet av förra passet.',
 }

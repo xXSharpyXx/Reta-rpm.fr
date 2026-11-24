@@ -2803,4 +2803,11 @@ export default {
   'Pick your look': 'اختر مظهرك',
   'Sand': 'رمل',
   'You can change it any time in Settings.': 'يمكنك تغييره في أي وقت من الإعدادات.',
+  'Apply': 'تطبيق',
+  'Edit next time': 'تعديل للمرة القادمة',
+  'Keep {0}': 'الإبقاء على {0}',
+  'Next session set': 'تم ضبط الحصة القادمة',
+  'Validate all': 'تأكيد الكل',
+  'Your choice': 'اختيارك',
+  'Your choice at the end of the last session.': 'اختيارك في نهاية الجلسة الأخيرة.',
 }

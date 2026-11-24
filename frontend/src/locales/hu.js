@@ -2751,4 +2751,11 @@ export default {
   'Pick your look': 'Válaszd ki a stílusod',
   'Sand': 'Homok',
   'You can change it any time in Settings.': 'Bármikor módosíthatod a Beállításokban.',
+  'Apply': 'Alkalmaz',
+  'Edit next time': 'Következő alkalom szerkesztése',
+  'Keep {0}': '{0} megtartása',
+  'Next session set': 'Következő edzés beállítva',
+  'Validate all': 'Mind jóváhagyása',
+  'Your choice': 'A te döntésed',
+  'Your choice at the end of the last session.': 'A te döntésed az utolsó edzés végén.',
 }

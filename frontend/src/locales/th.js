@@ -2759,4 +2759,11 @@ export default {
   'Pick your look': 'เลือกลุคของคุณ',
   'Sand': 'ทราย',
   'You can change it any time in Settings.': 'เปลี่ยนได้ทุกเมื่อในการตั้งค่า',
+  'Apply': 'ใช้',
+  'Edit next time': 'แก้ไขสำหรับครั้งหน้า',
+  'Keep {0}': 'คง {0} ไว้',
+  'Next session set': 'ตั้งค่าการฝึกครั้งหน้าแล้ว',
+  'Validate all': 'ยืนยันทั้งหมด',
+  'Your choice': 'ตัวเลือกของคุณ',
+  'Your choice at the end of the last session.': 'ตัวเลือกของคุณเมื่อจบการฝึกครั้งล่าสุด',
 }

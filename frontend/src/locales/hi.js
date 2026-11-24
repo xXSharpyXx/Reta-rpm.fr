@@ -2748,4 +2748,11 @@ export default {
   'Pick your look': 'अपना लुक चुनें',
   'Sand': 'रेत',
   'You can change it any time in Settings.': 'आप इसे कभी भी सेटिंग्स में बदल सकते हैं।',
+  'Apply': 'लागू करें',
+  'Edit next time': 'अगली बार बदलें',
+  'Keep {0}': '{0} रखें',
+  'Next session set': 'अगला सत्र तय हो गया',
+  'Validate all': 'सब मान्य करें',
+  'Your choice': 'आपकी पसंद',
+  'Your choice at the end of the last session.': 'पिछले सत्र के अंत में आपकी पसंद।',
 }

@@ -2748,4 +2748,11 @@ export default {
   'Pick your look': 'Görünümünü seç',
   'Sand': 'Kum',
   'You can change it any time in Settings.': 'İstediğin zaman Ayarlar’dan değiştirebilirsin.',
+  'Apply': 'Uygula',
+  'Edit next time': 'Bir sonrakini düzenle',
+  'Keep {0}': '{0} kalsın',
+  'Next session set': 'Sonraki antrenman ayarlandı',
+  'Validate all': 'Hepsini onayla',
+  'Your choice': 'Senin seçimin',
+  'Your choice at the end of the last session.': 'Son antrenmanın sonunda yaptığın seçim.',
 }

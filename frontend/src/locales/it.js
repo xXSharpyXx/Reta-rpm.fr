@@ -2748,4 +2748,11 @@ export default {
   'Pick your look': 'Scegli il tuo stile',
   'Sand': 'Sabbia',
   'You can change it any time in Settings.': 'Puoi cambiarlo quando vuoi nelle Impostazioni.',
+  'Apply': 'Applica',
+  'Edit next time': 'Modifica la prossima volta',
+  'Keep {0}': 'Mantieni {0}',
+  'Next session set': 'Prossima sessione impostata',
+  'Validate all': 'Convalida tutto',
+  'Your choice': 'La tua scelta',
+  'Your choice at the end of the last session.': 'La tua scelta alla fine dell’ultima sessione.',
 }

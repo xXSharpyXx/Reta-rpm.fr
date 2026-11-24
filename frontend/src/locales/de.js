@@ -2768,4 +2768,11 @@ export default {
   'Pick your look': 'Wähle deinen Look',
   'Sand': 'Sand',
   'You can change it any time in Settings.': 'Du kannst es jederzeit in den Einstellungen ändern.',
+  'Apply': 'Anwenden',
+  'Edit next time': 'Nächstes Mal bearbeiten',
+  'Keep {0}': '{0} behalten',
+  'Next session set': 'Nächstes Training festgelegt',
+  'Validate all': 'Alle bestätigen',
+  'Your choice': 'Deine Wahl',
+  'Your choice at the end of the last session.': 'Deine Wahl am Ende der letzten Einheit.',
 }

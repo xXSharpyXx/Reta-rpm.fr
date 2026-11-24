@@ -2741,4 +2741,11 @@ export default {
   'Pick your look': '選擇你的外觀',
   'Sand': '沙色',
   'You can change it any time in Settings.': '你可以隨時在設定中更改。',
+  'Apply': '套用',
+  'Edit next time': '修改下次的數值',
+  'Keep {0}': '保持 {0}',
+  'Next session set': '下次訓練已設定',
+  'Validate all': '全部確認',
+  'Your choice': '你的選擇',
+  'Your choice at the end of the last session.': '你在上次訓練結束時的選擇。',
 }
