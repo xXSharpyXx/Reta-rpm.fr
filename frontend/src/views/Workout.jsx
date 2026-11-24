@@ -2053,7 +2053,7 @@ function ActiveWorkout() {
   // spare on a phone (a second line under the name). With the chips off it sits in the header.
   const sessionMap = wc.muscleMap ? <SessionMapButton entries={A.entries} body={S.body} /> : null
   const chipRow = wc.exerciseChips && A.entries.length > 0
-    ? <div className="wchips-row"><WorkoutChips entries={A.entries} cur={listMode ? visibleExercise : cur} onPick={pickChip} />{sessionMap}</div>
+    ? <div className="wchips-row"><WorkoutChips entries={A.entries} cur={listMode ? visibleExercise : cur} onPick={pickChip} onAdd={addExercise} />{sessionMap}</div>
     : null
 
   // Hardware keys (issue #133, lib/workout-keys.js): Space or Enter ticks the next set, ← and →

@@ -2695,13 +2695,15 @@ describe('list layout: only what is left to do (Discord request, #241)', () => {
 })
 
 describe('exercise chips at the top of the workout (#323)', () => {
-  const chips = () => [...container.querySelectorAll('.wchip')]
+  const chips = () => [...container.querySelectorAll('.wchip:not(.add)')]
   const chip = n => chips()[n - 1]
   const session = () => [exercise('bench', [true, true]), exercise('fly', [true, false], { sg: 'pair' }), exercise('row', [false], { sg: 'pair' }), exercise('squat', [false])]
 
   it('shows one chip per unit with its state in Cards, a superset as one, in place of "Exercise N / M"', async () => {
     await mount(session(), 3)
     expect(chips().map(c => c.className)).toEqual(['wchip done', 'wchip partial', 'wchip todo cur'])
+    // and one more bubble at the end, to add an exercise without the header's menu
+    expect(container.querySelector('.wchip.add')?.getAttribute('aria-label')).toBe('Add exercise')
     expect(chip(3).getAttribute('aria-current')).toBe('step')
     expect(chip(1).getAttribute('aria-current')).toBeNull()
     // test ids are not in the catalogue, so each name reads as the unknown-exercise fallback
