@@ -2814,4 +2814,8 @@ export default {
   'Use today’s order and sets': 'استخدام ترتيب اليوم ومجموعاته',
   'Validate': 'تأكيد',
   'Was {0}': 'كان {0}',
+  'My week': 'أسبوعي',
+  'Pick the days this routine is planned on.': 'اختر الأيام التي يُخطَّط فيها لهذا الروتين.',
+  'Plan on days': 'تخطيط على أيام',
+  'Start another routine': 'ابدأ روتينًا آخر',
 }

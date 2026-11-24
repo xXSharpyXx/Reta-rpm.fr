@@ -2759,4 +2759,8 @@ export default {
   'Use today’s order and sets': '使用今天的顺序和组数',
   'Validate': '确认',
   'Was {0}': '之前 {0}',
+  'My week': '我的一周',
+  'Pick the days this routine is planned on.': '选择计划进行这个训练的日子。',
+  'Plan on days': '安排到某几天',
+  'Start another routine': '开始另一个训练',
 }

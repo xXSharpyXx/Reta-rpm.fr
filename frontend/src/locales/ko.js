@@ -2759,4 +2759,8 @@ export default {
   'Use today’s order and sets': '오늘의 순서와 세트 사용',
   'Validate': '확정',
   'Was {0}': '이전 {0}',
+  'My week': '내 주간',
+  'Pick the days this routine is planned on.': '이 루틴을 계획할 요일을 고르세요.',
+  'Plan on days': '요일에 배정',
+  'Start another routine': '다른 루틴 시작',
 }

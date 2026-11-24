@@ -2752,4 +2752,8 @@ export default {
   'Use today’s order and sets': '使用今天的順序和組數',
   'Validate': '確認',
   'Was {0}': '之前 {0}',
+  'My week': '我的一週',
+  'Pick the days this routine is planned on.': '選擇計畫進行這個訓練的日子。',
+  'Plan on days': '安排到某幾天',
+  'Start another routine': '開始另一個訓練',
 }

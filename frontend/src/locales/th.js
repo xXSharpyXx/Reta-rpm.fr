@@ -2770,4 +2770,8 @@ export default {
   'Use today’s order and sets': 'ใช้ลำดับและเซ็ตของวันนี้',
   'Validate': 'ยืนยัน',
   'Was {0}': 'เดิม {0}',
+  'My week': 'สัปดาห์ของฉัน',
+  'Pick the days this routine is planned on.': 'เลือกวันที่วางแผนรูทีนนี้',
+  'Plan on days': 'วางแผนตามวัน',
+  'Start another routine': 'เริ่มรูทีนอื่น',
 }

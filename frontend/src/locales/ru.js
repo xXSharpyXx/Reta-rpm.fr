@@ -2763,4 +2763,8 @@ export default {
   'Use today’s order and sets': 'Взять порядок и подходы с сегодняшней тренировки',
   'Validate': 'Подтвердить',
   'Was {0}': 'Было {0}',
+  'My week': 'Моя неделя',
+  'Pick the days this routine is planned on.': 'Выберите дни, на которые запланирована эта тренировка.',
+  'Plan on days': 'Назначить на дни',
+  'Start another routine': 'Начать другую тренировку',
 }

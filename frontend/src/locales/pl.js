@@ -2759,4 +2759,8 @@ export default {
   'Use today’s order and sets': 'Użyj dzisiejszej kolejności i serii',
   'Validate': 'Zatwierdź',
   'Was {0}': 'Było {0}',
+  'My week': 'Mój tydzień',
+  'Pick the days this routine is planned on.': 'Wybierz dni, w które ten trening jest zaplanowany.',
+  'Plan on days': 'Zaplanuj na dni',
+  'Start another routine': 'Zacznij inny trening',
 }

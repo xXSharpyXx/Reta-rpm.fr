@@ -2756,4 +2756,8 @@ export default {
   'Use today’s order and sets': 'Взяти порядок і підходи з сьогоднішнього тренування',
   'Validate': 'Підтвердити',
   'Was {0}': 'Було {0}',
+  'My week': 'Мій тиждень',
+  'Pick the days this routine is planned on.': 'Виберіть дні, на які заплановано це тренування.',
+  'Plan on days': 'Призначити на дні',
+  'Start another routine': 'Почати інше тренування',
 }

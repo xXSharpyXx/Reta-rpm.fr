@@ -1699,6 +1699,10 @@ export const PT_BR_OVERRIDES = {
   'Use today’s order and sets': 'Usar a ordem e as séries de hoje',
   'Validate': 'Validar',
   'Was {0}': 'Era {0}',
+  'My week': 'Minha semana',
+  'Pick the days this routine is planned on.': 'Escolha os dias em que esta rotina está prevista.',
+  'Plan on days': 'Planejar em dias',
+  'Start another routine': 'Começar outra rotina',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }

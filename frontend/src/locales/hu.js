@@ -2762,4 +2762,8 @@ export default {
   'Use today’s order and sets': 'A mai sorrend és sorozatok használata',
   'Validate': 'Jóváhagyás',
   'Was {0}': 'Volt: {0}',
+  'My week': 'Az én hetem',
+  'Pick the days this routine is planned on.': 'Válaszd ki a napokat, amikor ez a rutin esedékes.',
+  'Plan on days': 'Napokra tervezés',
+  'Start another routine': 'Másik rutin indítása',
 }

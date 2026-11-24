@@ -2759,4 +2759,8 @@ export default {
   'Use today’s order and sets': 'Reprendre l’ordre et les séries d’aujourd’hui',
   'Validate': 'Valider',
   'Was {0}': 'Avant : {0}',
+  'My week': 'Ma semaine',
+  'Pick the days this routine is planned on.': 'Choisis les jours où cette routine est prévue.',
+  'Plan on days': 'Planifier sur des jours',
+  'Start another routine': 'Commencer une autre routine',
 }

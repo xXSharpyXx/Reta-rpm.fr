@@ -2779,4 +2779,8 @@ export default {
   'Use today’s order and sets': 'Reihenfolge und Sätze von heute übernehmen',
   'Validate': 'Bestätigen',
   'Was {0}': 'War {0}',
+  'My week': 'Meine Woche',
+  'Pick the days this routine is planned on.': 'Wähle die Tage, an denen diese Routine geplant ist.',
+  'Plan on days': 'Auf Tage legen',
+  'Start another routine': 'Andere Routine starten',
 }

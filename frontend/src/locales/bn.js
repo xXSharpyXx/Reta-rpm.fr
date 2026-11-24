@@ -2838,4 +2838,8 @@ export default {
   'Use today’s order and sets': 'আজকের ক্রম ও সেট ব্যবহার করুন',
   'Validate': 'নিশ্চিত করুন',
   'Was {0}': 'ছিল {0}',
+  'My week': 'আমার সপ্তাহ',
+  'Pick the days this routine is planned on.': 'যে দিনগুলোতে এই রুটিন ঠিক করা আছে সেগুলো বেছে নিন।',
+  'Plan on days': 'দিনে ঠিক করুন',
+  'Start another routine': 'অন্য রুটিন শুরু করুন',
 }

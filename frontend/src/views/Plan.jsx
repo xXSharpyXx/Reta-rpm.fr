@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
@@ -8,13 +8,13 @@ import { todaySession } from '../lib/today-session.js'
 import { lastDoneOf } from '../lib/session-picker.js'
 import { t } from '../lib/i18n.js'
 import {
-  dayAssignSheet, starterPlanSheet, menuSheet,
+  dayAssignSheet, routineDaysSheet, starterPlanSheet, menuSheet,
   planHasRoutines, exportPlanFile, printWholePlan, importPlanFile,
   startSession,
 } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
-import { Button, Row, Section } from '../components/ui.jsx'
+import { Button, Row, Section, Segmented } from '../components/ui.jsx'
 import { deleteRoutine, restoreRoutine, routineSnapshot } from '../lib/routines.js'
 import MiniBodyMap from '../components/MiniBodyMap.jsx'
 import { tappable } from '../lib/use-sheet-keyboard.js'
@@ -50,9 +50,10 @@ export function undoDeleteRoutine(snap) {
   return ok
 }
 
-/* The Workouts page (one tab, in place of Plan and Start). Top to bottom: the performance review,
-   today's session with a big Start, the other sessions and a free one, and the fixed week. A tap
-   on a session offers to start it or to edit it; the big button and Freestyle start at once. */
+/* The Workouts page (one tab, in place of Plan and Start), Hevy style (owner, 2026-11-24). Top to
+   bottom: the performance review, a big Start for today's routine (no name, no Edit) with "Start
+   another routine" under it, then two glued buttons: "My week" (Monday to Sunday, to plan the
+   sessions on) and "My sessions" (the free session first, then every routine). */
 export default function Plan() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -61,6 +62,8 @@ export default function Plan() {
   const coachMode = useStore(s => s.coachLocal?.mode)
   const user = useStore(s => s.user)
   const fileRef = useRef(null)
+  // The week to plan on first; with no routine to plan yet, the sessions, where the first one is made.
+  const [view, setView] = useState(() => (S.routines.length ? 'week' : 'sessions'))
 
   /* The Coach's way in: its own button in the header, gated by the same predicate every other
      Coach surface uses, so an instance without the feature sees the header it would have without. */
@@ -96,27 +99,23 @@ export default function Plan() {
       <Row icon="sparkles" iconTint="var(--acc)" title={t('Analyze my latest performance')} subtitle={t('Progress, stalls, records and an AI review')}
         accessory="chevron" onClick={() => nav('/plan/bilan')} />
     </Section>
-    <TodayCard S={S} nav={nav} />
-    <OtherWorkouts S={S} nav={nav} update={update} />
-    <h4 className="sec plan-h">{t('My plans')}</h4>
-    <Schedule S={S} nav={nav} />
+    <StartCard S={S} nav={nav} />
+    <Segmented className="plan-views" value={view} onChange={setView}
+      options={[{ value: 'week', label: t('My week') }, { value: 'sessions', label: t('My sessions') }]} />
+    {view === 'week' ? <Schedule S={S} nav={nav} /> : <Sessions S={S} nav={nav} update={update} />}
     <Section className="plan-link">
       <Row icon="dumbbell" iconTint="var(--indigo)" title={t('Exercise library')} accessory="chevron" onClick={() => nav('/library')} />
     </Section>
   </div>
 }
 
-/* ================================ Today ================================ */
+/* ================================ Start ================================ */
 
-// Today's session from the fixed week, with one big button. A session in progress takes its
-// place (Resume), a session already done says so, and a rest day names the next one.
-function TodayCard({ S, nav }) {
+// Today's routine from the fixed week behind one big Start (no name, nothing to edit here), and
+// "Start another routine" under it. A session in progress takes its place (Resume); on a rest day
+// there is no big Start, and the next session is named.
+function StartCard({ S, nav }) {
   const today = todaySession(S, todayISO())
-  // The day's routines, each one to edit (a combined day holds several).
-  const editToday = () => today.routines.length === 1 ? nav('/plan/r/' + today.routines[0].id) : menuSheet({
-    title: t('Edit'), items: today.routines.map(r => ({ icon: glyphOf(r.emoji), label: r.name, chevron: true, onClick: () => nav('/plan/r/' + r.id) })),
-  })
-  const start = () => startSession(today.ids)
   if (S.active) {
     const editing = !!S.active.editingWorkoutId
     return <div className="card today-card on">
@@ -125,34 +124,31 @@ function TodayCard({ S, nav }) {
       <Button variant="primary" icon={editing ? 'pencil' : 'play'} className="today-go" onClick={() => nav('/workout')}>{editing ? t('Edit') : t('Resume')}</Button>
     </div>
   }
-  if (!today.routines.length) {
-    return <div className="card today-card">
-      <div className="today-lbl">{t('Today')}{today.rescheduled ? ' · ' + t('rescheduled') : ''}</div>
-      <div className="today-name">{today.done ? t('{0} (done)', today.done.name || t('Workout')) : t('Rest day')}</div>
-      {today.next && !today.done && <div className="today-sub">{t('Next session: {0}, {1}', t(DAYN[today.next.weekday]), today.next.routine.name)}</div>}
-    </div>
-  }
-  const n = today.routines.reduce((k, r) => k + r.ex.length, 0)
-  return <div className={'card today-card' + (today.done ? '' : ' on')}>
-    <div className="today-lbl">{t("Today's plan")}{today.rescheduled ? ' · ' + t('rescheduled') : ''}</div>
-    <div className="row" style={{ gap: 12, alignItems: 'center' }}>
-      <div className="grow" style={{ minWidth: 0 }}>
-        <div className="today-name">{today.done ? t('{0} (done)', today.name) : today.name}</div>
-        <div className="today-sub">{exCount(n)}</div>
-      </div>
-      <MiniBodyMap routines={today.routines} body={S.body} />
-    </div>
-    <Button variant={today.done ? 'tinted' : 'primary'} icon="play" className="today-go" onClick={start}>{t('Start {0}', today.name)}</Button>
-    <Button variant="ghost" size="sm" icon="pencil" className="today-edit" onClick={editToday}>{t('Edit')}</Button>
+  const planned = today.routines.length > 0
+  const another = () => menuSheet({
+    title: t('Start another routine'),
+    items: [
+      { icon: 'shuffle', label: t('Freestyle workout'), sub: t('Pick the exercises as you go'), onClick: () => startSession([]) },
+      ...S.routines.map(r => ({ icon: glyphOf(r.emoji), label: r.name, sub: exCount(r.ex.length), onClick: () => startSession([r.id]) })),
+    ],
+  })
+  return <div className={'card today-card' + (planned && !today.done ? ' on' : '')}>
+    {planned
+      ? <div className="today-lbl">{t("Today's plan")}{today.rescheduled ? ' · ' + t('rescheduled') : ''}</div>
+      : <>
+        <div className="today-lbl">{today.done ? t('{0} (done)', today.done.name || t('Workout')) : t('Rest day')}</div>
+        {today.next && !today.done && <div className="today-sub">{t('Next session: {0}, {1}', t(DAYN[today.next.weekday]), today.next.routine.name)}</div>}
+      </>}
+    {planned && <Button variant={today.done ? 'tinted' : 'primary'} icon="play" className="today-go" onClick={() => startSession(today.ids)}>{t('Start')}</Button>}
+    <Button variant={planned ? 'ghost' : 'primary'} icon="shuffle" className="today-other" onClick={another}>{t('Start another routine')}</Button>
   </div>
 }
 
-// The other sessions and a free one. A tap on a session asks what to do with it: start it, or edit
-// it (the list of sessions to edit that used to sit at the bottom of the page is this one now).
-// A session in progress hides the starting: there is only editing then.
-function OtherWorkouts({ S, nav, update }) {
-  const ids = new Set(effectiveRoutineIds(S, todayISO()))
-  const others = S.routines.filter(r => !ids.has(r.id))
+/* ================================ Sessions ================================ */
+
+// Every routine, the free session first. A tap asks what to do with it: start it, edit it, or plan
+// it on days of the week. A session in progress hides the starting: there is only editing then.
+function Sessions({ S, nav, update }) {
   const edit = r => nav('/plan/r/' + r.id)
   const choose = r => S.active ? edit(r) : menuSheet({
     title: r.name,
@@ -160,6 +156,7 @@ function OtherWorkouts({ S, nav, update }) {
     items: [
       { icon: 'play', label: t('Start'), accent: true, onClick: () => startSession([r.id]) },
       { icon: 'pencil', label: t('Edit'), onClick: () => edit(r) },
+      { icon: 'calendar', label: t('Plan on days'), onClick: () => routineDaysSheet(r.id) },
     ],
   })
   const addRoutine = () => {
@@ -167,11 +164,15 @@ function OtherWorkouts({ S, nav, update }) {
     update(s => { s.routines.push(r) })
     edit(r)
   }
-  // How many exercises, and when it was last done (lib/session-picker.js).
-  const lastSub = r => { const last = lastDoneOf(S.workouts, r.id); return [exCount(r.ex.length), last ? t('last time {0}', fmtDaysAgo(last)) : t('never done yet')].join(' · ') }
+  // How many exercises, the days it is planned on, and when it was last done (lib/session-picker.js).
+  const sub = r => {
+    const last = lastDoneOf(S.workouts, r.id)
+    const days = weekOrder(weekStartOf(S)).filter(d => [].concat(S.week[d] || []).includes(r.id)).map(d => t(DAYS[d])).join(' ')
+    return [exCount(r.ex.length), days, last ? t('last time {0}', fmtDaysAgo(last)) : t('never done yet')].filter(Boolean).join(' · ')
+  }
   return <>
     <div className="row between plan-h">
-      <h4 className="sec" style={{ margin: 0 }}>{t('Other routines')}</h4>
+      <h4 className="sec" style={{ margin: 0 }}>{t('My sessions')}</h4>
       <Button size="sm" variant="tinted" icon="plus" onClick={addRoutine}>{t('New routine')}</Button>
     </div>
     {!S.routines.length && <div className="empty plan-empty">
@@ -179,16 +180,16 @@ function OtherWorkouts({ S, nav, update }) {
       <div style={{ marginTop: 12 }}><Button icon="clipboard" onClick={starterPlanSheet}>{t('Load starter plan')}</Button></div>
     </div>}
     <div className="list plan-others">
-      {others.map(r => <div key={r.id} className="item" {...tappable(() => choose(r))}>
-        <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
-        <div className="grow"><div className="tt">{r.name}</div><div className="ss">{lastSub(r)}</div></div>
-        <Icon name="chevronRight" className="chev" />
-      </div>)}
       {!S.active && <div className="item" {...tappable(() => startSession([]))}>
         <span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="shuffle" /></span>
         <div className="grow"><div className="tt">{t('Freestyle workout')}</div><div className="ss">{t('Pick the exercises as you go')}</div></div>
         <span className="tag acc">{t('Start')}</span>
       </div>}
+      {S.routines.map(r => <div key={r.id} className="item" {...tappable(() => choose(r))}>
+        <span className="lrow-i"><Icon name={glyphOf(r.emoji)} /></span>
+        <div className="grow"><div className="tt">{r.name}</div><div className="ss">{sub(r)}</div></div>
+        <Icon name="chevronRight" className="chev" />
+      </div>)}
     </div>
   </>
 }
@@ -217,7 +218,6 @@ function Schedule({ S, nav }) {
   }
 
   return <>
-    <h4 className="sec plan-sub">{t('This week')}</h4>
     <div className="list plan-week">{weekOrder(ws).map(dayRow)}</div>
     <p className="sect-f">{t('Want two routines on one day? Tap the day and pick both.')}</p>
 

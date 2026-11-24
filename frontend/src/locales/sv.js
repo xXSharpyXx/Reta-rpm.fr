@@ -2806,4 +2806,8 @@ export default {
   'Use today’s order and sets': 'Använd dagens ordning och set',
   'Validate': 'Godkänn',
   'Was {0}': 'Var {0}',
+  'My week': 'Min vecka',
+  'Pick the days this routine is planned on.': 'Välj de dagar då det här passet är planerat.',
+  'Plan on days': 'Planera på dagar',
+  'Start another routine': 'Starta ett annat pass',
 }

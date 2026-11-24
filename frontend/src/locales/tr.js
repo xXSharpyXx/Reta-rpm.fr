@@ -2759,4 +2759,8 @@ export default {
   'Use today’s order and sets': 'Bugünün sırasını ve setlerini kullan',
   'Validate': 'Onayla',
   'Was {0}': 'Önceden {0}',
+  'My week': 'Haftam',
+  'Pick the days this routine is planned on.': 'Bu rutinin planlandığı günleri seç.',
+  'Plan on days': 'Günlere planla',
+  'Start another routine': 'Başka bir rutin başlat',
 }

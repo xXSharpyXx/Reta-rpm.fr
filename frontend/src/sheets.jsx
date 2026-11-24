@@ -2701,6 +2701,35 @@ function DayAssign({ day, close }) {
 }
 export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day} close={close} />)
 
+// The same assignment from the routine's side: the week's days, ticked where the routine is on.
+function RoutineDays({ routineId, close }) {
+  const st = useStore(s => s.S)
+  const r = st.routines.find(x => x.id === routineId)
+  const ws = weekStartOf(st)
+  const toggle = day => update(s => {
+    const ids = [].concat(s.week[day] || [])
+    const next = ids.includes(routineId) ? ids.filter(x => x !== routineId) : [...ids, routineId]
+    if (next.length) s.week[day] = next; else delete s.week[day]
+  })
+  if (!r) return null
+  return <>
+    <h3 style={{ marginBottom: 2 }}>{r.name}</h3>
+    <div className="muted small" style={{ marginBottom: 10 }}>{t('Pick the days this routine is planned on.')}</div>
+    <div className="list menu-list" data-routine-days>
+      {weekOrder(ws).map(d => {
+        const on = [].concat(st.week[d] || []).includes(routineId)
+        return <div key={d} className="item menu-item" data-day={d} aria-pressed={on} {...tappable(() => toggle(d))}>
+          <div className="grow"><div className="tt">{t(DAYN[d])}</div></div>
+          <span className={'menu-on' + (on ? ' is-on' : '')}><Icon name="check" /></span>
+        </div>
+      })}
+    </div>
+    <div style={{ height: 12 }} />
+    <Button variant="primary" onClick={close}>{t('Done')}</Button>
+  </>
+}
+export const routineDaysSheet = routineId => ui().openSheet(close => <RoutineDays routineId={routineId} close={close} />)
+
 /* ============================ workout detail ============================ */
 // Correcting when a saved session happened: typed in from another app, or logged on the wrong
 // day. Only its place in history moves — the sets, the volume and the notes are the record, and

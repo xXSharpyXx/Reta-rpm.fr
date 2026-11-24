@@ -2759,4 +2759,8 @@ export default {
   'Use today’s order and sets': 'आज का क्रम और सेट इस्तेमाल करें',
   'Validate': 'मान्य करें',
   'Was {0}': 'पहले {0}',
+  'My week': 'मेरा सप्ताह',
+  'Pick the days this routine is planned on.': 'वे दिन चुनें जब यह रूटीन तय है।',
+  'Plan on days': 'दिनों पर तय करें',
+  'Start another routine': 'दूसरा रूटीन शुरू करें',
 }
