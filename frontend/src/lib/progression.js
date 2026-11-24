@@ -22,6 +22,7 @@ import { isWarmupRow, isSideSet, syncSideAggregate, makeSideSet } from './workou
 import { normalizeRepRange } from './rep-range.js'
 import { isPyramid } from './pyramid.js'
 import { backoffAt } from './backoff.js'
+import { nextChoiceOf } from './next-choice.js'
 import { ownedWeightsFor, ownedKindFor, ownedUp, ownedDeload, ownedAround } from './dumbbells.js'
 
 export const POLICIES = ['off', 'linear', 'greyskull', 'double', 'triple', 'time']
@@ -351,7 +352,9 @@ function sessionsIn(S, exId, fallback, rid) {
     if (entryExcluded(w, entry)) return
     if (!entry.sets.some(s => s.done && !isWarmupRow(s))) return
     const slot = entryRoutineId(w, entry)
-    out.push({ d: w.d, ...(slot ? { rid: slot } : {}), ...(entry.planned ? { planned: entry.planned } : {}), ...readSession(entry, fallback) })
+    // What the lifter chose at the end of this session for the next one (lib/next-choice.js).
+    const chosen = nextChoiceOf(entry)
+    out.push({ d: w.d, ...(slot ? { rid: slot } : {}), ...(entry.planned ? { planned: entry.planned } : {}), ...(chosen ? { next: chosen } : {}), ...readSession(entry, fallback) })
   })
   return out
 }
@@ -529,6 +532,18 @@ export function nextPrescription(S, cfg, routine) {
       return { policy, kind: 'hold', ...held, reps: aim, why }
     }
     return { policy, kind: 'hold', ...held, reps: cfg.reps || undefined, why }
+  }
+
+  // The lifter's own say at the end of the last session (the finish summary): the weight and reps
+  // it opens at, whatever the policy would have asked. Only the last session speaks, so it lapses
+  // once the next one is saved; an edited plan (above) still restarts from the routine's numbers.
+  if (mode === 'reps' && last.next) {
+    const { w: cw, r: cr } = last.next
+    return {
+      policy, kind: cw > last.weight + 1e-9 ? 'up' : 'hold', weight: cw, reps: cr,
+      ...(triple ? { sets: sets3.setsMin, rowReps: startRows(cr) } : {}),
+      why: ['Your choice at the end of the last session.'],
+    }
   }
 
   const stalls = stallCount(sessions, policy)
